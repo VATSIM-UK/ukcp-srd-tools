@@ -10,6 +10,7 @@ import (
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/db"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/excel"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/file"
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/lock"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/parse"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/srd"
 	"github.com/alecthomas/kong"
@@ -82,6 +83,16 @@ func doAirac() {
 }
 
 func doImport() {
+	lockfile, err := lock.NewLock()
+	if err == lock.ErrAlreadyLocked {
+		fmt.Println("Another process is already running")
+		os.Exit(1)
+	} else if err != nil {
+		fmt.Printf("Failed to acquire lock: %v\n", err)
+		os.Exit(1)
+	}
+	defer lockfile.Unlock()
+
 	// Get the filename from the command line
 	path, _ := filepath.Abs(CLI.Import.Filename)
 
