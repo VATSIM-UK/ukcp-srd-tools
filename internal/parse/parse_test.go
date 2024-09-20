@@ -201,6 +201,10 @@ func (m *mockSrdFile) Notes() iter.Seq2[*note.Note, error] {
 	}
 }
 
+func (m *mockSrdFile) Stats() file.SrdStats {
+	return file.SrdStats{}
+}
+
 func ptr[V string | uint64](v V) *V {
 	return &v
 }

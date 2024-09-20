@@ -16,10 +16,45 @@ var ScenarioRowRegxp = regexp.MustCompile(`^Scenario S\d+`)
 type SrdFile interface {
 	Routes() iter.Seq2[*route.Route, error]
 	Notes() iter.Seq2[*note.Note, error]
+	Stats() SrdStats
+}
+
+type SrdStats struct {
+	RouteCount      int
+	RouteErrorCount int
+	NoteCount       int
+	NoteErrorCount  int
+}
+
+func (s *SrdStats) RouteError() {
+	s.RouteErrorCount++
+}
+
+func (s *SrdStats) Route() {
+	s.RouteCount++
+}
+
+func (s *SrdStats) NoteError() {
+	s.NoteErrorCount++
+}
+
+func (s *SrdStats) Note() {
+	s.NoteCount++
+}
+
+func (s *SrdStats) ResetNoteStats() {
+	s.NoteCount = 0
+	s.NoteErrorCount = 0
+}
+
+func (s *SrdStats) ResetRouteStats() {
+	s.RouteCount = 0
+	s.RouteErrorCount = 0
 }
 
 type srdFile struct {
-	file excelFile
+	file  excelFile
+	stats SrdStats
 }
 
 type excelFile interface {
@@ -37,19 +72,26 @@ func NewSrdFile(excelFile excelFile) (SrdFile, error) {
 		return nil, fmt.Errorf("Notes sheet, %d not found", excel.SheetNotes)
 	}
 
-	return &srdFile{excelFile}, nil
+	return &srdFile{excelFile, SrdStats{}}, nil
 }
 
 func (f *srdFile) Routes() iter.Seq2[*route.Route, error] {
 	headerRowProcessed := false
 	return func(yield func(*route.Route, error) bool) {
+		// Reset the route stats
+		f.stats.ResetRouteStats()
+		yieldWrapper := func(route *route.Route, err error) bool {
+			f.incrementRouteStats(err)
+			return yield(route, err)
+		}
+
 		for row := range f.file.SheetRows(excel.SheetRoutes) {
 			if !headerRowProcessed {
 				headerRowProcessed = true
 				continue
 			}
 
-			if !yield(mapRoute(row)) {
+			if !yieldWrapper(mapRoute(row)) {
 				return
 			}
 		}
@@ -60,6 +102,13 @@ func (f *srdFile) Notes() iter.Seq2[*note.Note, error] {
 	return func(yield func(*note.Note, error) bool) {
 		rowsToProcess := make([][]string, 0)
 		inNote := false
+
+		// Reset the note stats
+		f.stats.ResetNoteStats()
+		yieldWrapper := func(note *note.Note, err error) bool {
+			f.incrementNoteStats(err)
+			return yield(note, err)
+		}
 
 		for row := range f.file.SheetRows(excel.SheetNotes) {
 			if len(row) == 0 {
@@ -79,8 +128,7 @@ func (f *srdFile) Notes() iter.Seq2[*note.Note, error] {
 			// We've found a header row and we already have some lines, so process the existing lines
 			if isHeaderRow && len(rowsToProcess) > 0 {
 				inNote = true
-
-				if !yield(mapNote(rowsToProcess)) {
+				if !yieldWrapper(mapNote(rowsToProcess)) {
 					return
 				}
 
@@ -98,7 +146,7 @@ func (f *srdFile) Notes() iter.Seq2[*note.Note, error] {
 			// If we find a scenario row, we are now leaving a note, process any existing rows
 			if ScenarioRowRegxp.MatchString(row[0]) {
 				if len(rowsToProcess) > 0 {
-					if !yield(mapNote(rowsToProcess)) {
+					if !yieldWrapper(mapNote(rowsToProcess)) {
 						return
 					}
 
@@ -116,7 +164,28 @@ func (f *srdFile) Notes() iter.Seq2[*note.Note, error] {
 
 		// We've reached the end of the sheet, so process the last set of rows if there are any
 		if len(rowsToProcess) > 0 {
-			yield(mapNote(rowsToProcess))
+			yieldWrapper(mapNote(rowsToProcess))
 		}
 	}
+}
+
+func (f *srdFile) incrementNoteStats(err error) {
+	if err != nil {
+		f.stats.NoteError()
+	} else {
+		f.stats.Note()
+	}
+}
+
+func (f *srdFile) incrementRouteStats(err error) {
+	if err != nil {
+		f.stats.RouteError()
+	} else {
+		f.stats.Route()
+	}
+}
+
+// Stats returns the statistics for the SRD file
+func (f *srdFile) Stats() SrdStats {
+	return f.stats
 }

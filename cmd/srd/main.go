@@ -65,8 +65,12 @@ func doParse() {
 	fmt.Printf("Parsing SRD file %v\n", path)
 	summary := parse.ParseSrd(file)
 
-	fmt.Printf("Parsed %v routes with %v errors\n", summary.RouteCount, summary.RouteErrorCount)
-	fmt.Printf("Parsed %v notes with %v errors\n", summary.NoteCount, summary.NoteErrorCount)
+	printStats(summary)
+}
+
+func printStats(stats file.SrdStats) {
+	fmt.Printf("Processed %v routes with %v errors\n", stats.RouteCount, stats.RouteErrorCount)
+	fmt.Printf("Processed %v notes with %v errors\n", stats.NoteCount, stats.NoteErrorCount)
 }
 
 func doAirac() {
@@ -141,6 +145,9 @@ func importProcess(filePath string) {
 	}
 
 	fmt.Printf("Imported SRD for cycle %v\n", CLI.Import.Cycle)
+
+	// Print the stats
+	printStats(file.Stats())
 }
 
 func doDownload(force bool) {
