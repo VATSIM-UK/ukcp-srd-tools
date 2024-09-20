@@ -5,27 +5,34 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/airac"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/excel"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/file"
 	"github.com/alecthomas/kong"
 )
 
 var CLI struct {
-	Filename string `arg:"" type:"path" help:"The filename of the SRD file to parse"`
+	Parse struct {
+		Filename string `arg:"" name:"filename" type:"path" help:"The filename of the SRD file to parse"`
+	} "cmd help:\"Parse an SRD file\""
+	Airac struct {
+	} "cmd help:\"Get information about the current AIRAC cycle\""
 }
 
 func main() {
 	// Get the filename from the command line
 	cmd := kong.Parse(&CLI)
 	switch cmd.Command() {
-	case "<filename>":
+	case "parse <filename>":
 		doParse()
+	case "airac":
+		doAirac()
 	}
 }
 
 func doParse() {
 	// Get the filename from the command line
-	path, _ := filepath.Abs(CLI.Filename)
+	path, _ := filepath.Abs(CLI.Parse.Filename)
 
 	// Check if the file exists
 	_, err := os.Stat(path)
@@ -71,4 +78,28 @@ func doParse() {
 
 	fmt.Printf("Parsed %v routes with %v errors\n", routeCount, routeErrorCount)
 	fmt.Printf("Parsed %v notes with %v errors\n", noteCount, noteErrorCount)
+}
+
+func doAirac() {
+	// Get the current AIRAC cycle
+	airac := airac.NewAirac(nil)
+
+	currentCycle := airac.CurrentCycle()
+
+	// Print the current cycle identifier with the start and end dates, dates to be formatted as "YYYY-MM-DD"
+	fmt.Printf(
+		"Current AIRAC cycle is %v (%v - %v)\n",
+		currentCycle.Ident,
+		currentCycle.Start.Format("2006-01-02"),
+		currentCycle.End.Format("2006-01-02"),
+	)
+
+	// Print the next cycle identifier with the start and end dates
+	nextCycle := airac.NextCycleFrom(currentCycle)
+	fmt.Printf(
+		"Next is %v (%v - %v)\n",
+		nextCycle.Ident,
+		nextCycle.Start.Format("2006-01-02"),
+		nextCycle.End.Format("2006-01-02"),
+	)
 }
