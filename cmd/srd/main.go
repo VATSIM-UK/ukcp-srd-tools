@@ -1,22 +1,29 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/airac"
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/db"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/excel"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/file"
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/parse"
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/srd"
 	"github.com/alecthomas/kong"
 )
 
 var CLI struct {
 	Parse struct {
 		Filename string `arg:"" name:"filename" type:"path" help:"The filename of the SRD file to parse"`
-	} "cmd help:\"Parse an SRD file\""
+	} `cmd:"" help:"Parse an SRD file"`
 	Airac struct {
 	} "cmd help:\"Get information about the current AIRAC cycle\""
+	Import struct {
+		Filename string `arg:"" name:"filename" type:"path" help:"The filename of the SRD file to import"`
+	} `cmd:"" help:"Import an SRD file"`
 }
 
 func main() {
@@ -25,6 +32,8 @@ func main() {
 	switch cmd.Command() {
 	case "parse <filename>":
 		doParse()
+	case "import <filename>":
+		doImport()
 	case "airac":
 		doAirac()
 	}
@@ -34,50 +43,18 @@ func doParse() {
 	// Get the filename from the command line
 	path, _ := filepath.Abs(CLI.Parse.Filename)
 
-	// Check if the file exists
-	_, err := os.Stat(path)
-	if err != nil {
-		fmt.Printf("File %v does not exist\n", path)
-		os.Exit(1)
-	}
-
-	excelFile, err := excel.NewExcelFile(path)
-	defer excelFile.Close()
-	if err != nil {
-		fmt.Printf("Failed to open excel file %v: %v\n", path, err)
-		os.Exit(1)
-	}
-
-	file, err := file.NewSrdFile(excelFile)
+	file, err := loadSrdFile(path)
 	if err != nil {
 		fmt.Printf("Failed to load SRD file %v: %v\n", path, err)
 		os.Exit(1)
 	}
 
-	routeCount := 0
-	routeErrorCount := 0
-	noteCount := 0
-	noteErrorCount := 0
-
+	// Parse the SRD file
 	fmt.Printf("Parsing SRD file %v\n", path)
-	for _, err := range file.Routes() {
-		if err != nil {
-			routeErrorCount++
-		} else {
-			routeCount++
-		}
-	}
+	summary := parse.ParseSrd(file)
 
-	for _, err := range file.Notes() {
-		if err != nil {
-			noteErrorCount++
-		} else {
-			noteCount++
-		}
-	}
-
-	fmt.Printf("Parsed %v routes with %v errors\n", routeCount, routeErrorCount)
-	fmt.Printf("Parsed %v notes with %v errors\n", noteCount, noteErrorCount)
+	fmt.Printf("Parsed %v routes with %v errors\n", summary.RouteCount, summary.RouteErrorCount)
+	fmt.Printf("Parsed %v notes with %v errors\n", summary.NoteCount, summary.NoteErrorCount)
 }
 
 func doAirac() {
@@ -102,4 +79,55 @@ func doAirac() {
 		nextCycle.Start.Format("2006-01-02"),
 		nextCycle.End.Format("2006-01-02"),
 	)
+}
+
+func doImport() {
+	// Get the filename from the command line
+	path, _ := filepath.Abs(CLI.Import.Filename)
+
+	file, err := loadSrdFile(path)
+	if err != nil {
+		fmt.Printf("Failed to load SRD file %v: %v\n", path, err)
+		os.Exit(1)
+	}
+
+	// Create a database connection
+	db, err := db.NewDatabase(db.DatabaseConnectionParams{
+		Host:     "localhost",
+		Port:     3306,
+		Username: "root",
+		Password: "secret",
+		Database: "uk_plugin",
+	})
+	if err != nil {
+		fmt.Printf("Failed to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+
+	defer db.Close()
+
+	// Create the importer and go
+	importer := srd.NewImport(file, db)
+
+	err = importer.Import(context.Background())
+	if err != nil {
+		fmt.Printf("Failed to import SRD file %v: %v\n", path, err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Imported SRD file %v\n", path)
+}
+
+func loadSrdFile(path string) (file.SrdFile, error) {
+	excelFile, err := excel.NewExcelFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	srdFile, err := file.NewSrdFile(excelFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return srdFile, nil
 }

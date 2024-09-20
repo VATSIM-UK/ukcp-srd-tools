@@ -120,7 +120,7 @@ func TestRoutes(t *testing.T) {
 				NotesSheet: {},
 			},
 			expectedRoutes: []*route.Route{
-				route.NewRoute("EGLL", ptr("SID1"), ptr(uint64(35000)), ptr(uint64(37000)), ptr("SEGMENT"), ptr("STAR1"), "EGKK", []uint64{123, 456}),
+				route.NewRoute("EGLL", ptr("SID1"), ptr(uint64(35000)), ptr(uint64(37000)), "SEGMENT", ptr("STAR1"), "EGKK", []uint64{123, 456}),
 			},
 			expectedErrors: []error{nil},
 		},
@@ -135,8 +135,8 @@ func TestRoutes(t *testing.T) {
 				NotesSheet: {},
 			},
 			expectedRoutes: []*route.Route{
-				route.NewRoute("EGLL", ptr("SID1"), ptr(uint64(35000)), ptr(uint64(37000)), ptr("SEGMENT"), ptr("STAR1"), "EGKK", []uint64{123, 456}),
-				route.NewRoute("EGKK", ptr("SID2"), ptr(uint64(37000)), ptr(uint64(39000)), ptr("SEGMENT"), ptr("STAR2"), "EGLL", []uint64{789, 12}),
+				route.NewRoute("EGLL", ptr("SID1"), ptr(uint64(35000)), ptr(uint64(37000)), "SEGMENT", ptr("STAR1"), "EGKK", []uint64{123, 456}),
+				route.NewRoute("EGKK", ptr("SID2"), ptr(uint64(37000)), ptr(uint64(39000)), "SEGMENT", ptr("STAR2"), "EGLL", []uint64{789, 12}),
 			},
 			expectedErrors: []error{nil, nil},
 		},
@@ -152,7 +152,7 @@ func TestRoutes(t *testing.T) {
 			},
 			expectedRoutes: []*route.Route{
 				nil,
-				route.NewRoute("EGKK", ptr("SID2"), ptr(uint64(37000)), ptr(uint64(39000)), ptr("SEGMENT"), ptr("STAR2"), "EGLL", []uint64{789, 12}),
+				route.NewRoute("EGKK", ptr("SID2"), ptr(uint64(37000)), ptr(uint64(39000)), "SEGMENT", ptr("STAR2"), "EGLL", []uint64{789, 12}),
 			},
 			expectedErrors: []error{errors.New("failed to parse note in remarks [EGLL SID1 350 370 SEGMENT STAR1 EGKK Notes: 123-abc]: strconv.ParseUint: parsing \"abc\": invalid syntax"), nil},
 		},

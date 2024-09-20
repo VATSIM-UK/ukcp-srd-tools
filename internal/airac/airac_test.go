@@ -330,3 +330,13 @@ func TestNextCycleFrom(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkCurrentAiracCycle(b *testing.B) {
+	clock := clockLib.NewMock()
+	airac := NewAirac(clock)
+	clock.Set(time.Date(2024, time.January, 25, 0, 0, 0, 0, time.UTC))
+
+	for i := 0; i < b.N; i++ {
+		airac.CurrentCycle()
+	}
+}

@@ -8,7 +8,7 @@ type Route struct {
 	standardInstrumentDeparture   *string
 	minimumFlightLevel            *uint64
 	maximumFlightLevel            *uint64
-	routeSegment                  *string
+	routeSegment                  string
 	standardTerminalArrivalRoute  *string
 	arrivalAirfieldOrExitPoint    string
 	noteIDs                       []uint64
@@ -20,7 +20,7 @@ func NewRoute(
 	SID *string,
 	minLevel *uint64,
 	maxLevel *uint64,
-	routeSegment *string,
+	routeSegment string,
 	STAR *string,
 	ADESOrExit string,
 	noteIDs []uint64,
@@ -53,7 +53,7 @@ func (r *Route) MaxLevel() *uint64 {
 	return r.maximumFlightLevel
 }
 
-func (r *Route) RouteSegment() *string {
+func (r *Route) RouteSegment() string {
 	return r.routeSegment
 }
 
@@ -77,7 +77,7 @@ func (r *Route) ToJSON() (string, error) {
 		StandardInstrumentDeparture   *string  `json:"standard_instrument_departure"`
 		MinimumFlightLevel            *uint64  `json:"minimum_flight_level"`
 		MaximumFlightLevel            *uint64  `json:"maximum_flight_level"`
-		RouteSegment                  *string  `json:"route_segment"`
+		RouteSegment                  string   `json:"route_segment"`
 		StandardTerminalArrivalRoute  *string  `json:"standard_terminal_arrival_route"`
 		ArrivalAirfieldOrExitPoint    string   `json:"arrival_airfield_or_exit_point"`
 		NoteIDs                       []uint64 `json:"note_ids"`

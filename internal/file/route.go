@@ -30,7 +30,7 @@ func mapRoute(row []string) (*route.Route, error) {
 		return nil, err
 	}
 
-	routeSegment := convertOptionalStringField(row, 4)
+	routeSegment := convertStringFieldDefaultEmpty(row, 4)
 
 	STAR := convertOptionalStringField(row, 5)
 
@@ -54,6 +54,11 @@ func convertStringField(row []string, index int, fieldName string) (string, erro
 		return "", missingValueError(row, fieldName)
 	}
 	return value, nil
+}
+
+// convertStringField returns the string value of the field, or empty if the field is empty
+func convertStringFieldDefaultEmpty(row []string, index int) string {
+	return strings.TrimSpace(row[index])
 }
 
 // convertOptionalStringField returns the string value of the field, or nil if the field is empty

@@ -12,6 +12,11 @@ import (
 // The first row is always in the format "Note <number>"
 // The subsequent rows are arbitrary text
 func mapNote(rows [][]string) (*note.Note, error) {
+	// If there are less than 1 row, return an error
+	if len(rows) < 1 {
+		return nil, fmt.Errorf("expected note id, got %v", rows)
+	}
+
 	// Get the note id using the note id RegExp
 	noteIDRegexMatch := NewRowRegxp.FindStringSubmatch(rows[0][0])
 
