@@ -8,6 +8,7 @@ import (
 
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/airac"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/db"
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/download"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/excel"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/file"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/lock"
@@ -23,8 +24,13 @@ var CLI struct {
 	Airac struct {
 	} "cmd help:\"Get information about the current AIRAC cycle\""
 	Import struct {
+		Cycle    string `arg:"" name:"cycle" help:"The identfier of the AIRAC cycle being imported"`
 		Filename string `arg:"" name:"filename" type:"path" help:"The filename of the SRD file to import"`
 	} `cmd:"" help:"Import an SRD file"`
+	Download struct {
+		// Force is an argument presented as --force or -f
+		Force bool `short:"f" help:"Force download of the SRD file"`
+	} `cmd:"" help:"Download the SRD file"`
 }
 
 func main() {
@@ -33,10 +39,15 @@ func main() {
 	switch cmd.Command() {
 	case "parse <filename>":
 		doParse()
-	case "import <filename>":
-		doImport()
+	case "import <cycle> <filename>":
+		doImport(CLI.Import.Filename)
 	case "airac":
 		doAirac()
+	case "download":
+		doDownload(CLI.Download.Force)
+	default:
+		fmt.Print("Incorrect command format - check code")
+		os.Exit(1)
 	}
 }
 
@@ -82,7 +93,7 @@ func doAirac() {
 	)
 }
 
-func doImport() {
+func doImport(filePath string) {
 	lockfile, err := lock.NewLock()
 	if err == lock.ErrAlreadyLocked {
 		fmt.Println("Another process is already running")
@@ -92,9 +103,12 @@ func doImport() {
 		os.Exit(1)
 	}
 	defer lockfile.Unlock()
+	importProcess(filePath)
+}
 
+func importProcess(filePath string) {
 	// Get the filename from the command line
-	path, _ := filepath.Abs(CLI.Import.Filename)
+	path, _ := filepath.Abs(filePath)
 
 	file, err := loadSrdFile(path)
 	if err != nil {
@@ -126,11 +140,48 @@ func doImport() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Imported SRD file %v\n", path)
+	fmt.Printf("Imported SRD for cycle %v\n", CLI.Import.Cycle)
+}
+
+func doDownload(force bool) {
+	lockfile, err := lock.NewLock()
+	if err == lock.ErrAlreadyLocked {
+		fmt.Println("Another process is already running")
+		os.Exit(1)
+	} else if err != nil {
+		fmt.Printf("Failed to acquire lock: %v\n", err)
+		os.Exit(1)
+	}
+	defer lockfile.Unlock()
+
+	// Get the current AIRAC cycle
+	airac := airac.NewAirac(nil)
+
+	currentCycle := airac.CurrentCycle()
+
+	// Download the SRD file
+	downloadUrl := download.DownloadUrl(currentCycle)
+	downloader, err := download.NewSrdDownloader(currentCycle, "/tmp", downloadUrl)
+	if err != nil {
+		fmt.Printf("Failed to create downloader: %v\n", err)
+		os.Exit(1)
+	}
+
+	err = downloader.Download(context.Background(), force)
+	if err == download.ErrUpToDate {
+		fmt.Println("SRD file is up to date, use --force to download anyway")
+		os.Exit(0)
+	} else if err != nil {
+		fmt.Printf("Failed to download SRD file: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Download happened, so now we do the import
+	importProcess(downloader.LatestFileLocation())
 }
 
 func loadSrdFile(path string) (file.SrdFile, error) {
-	excelFile, err := excel.NewExcelFile(path)
+	excelFile, err := loadExcelFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -141,4 +192,16 @@ func loadSrdFile(path string) (file.SrdFile, error) {
 	}
 
 	return srdFile, nil
+}
+
+// Load the right excel reader (xls or xlsx) based on the file extension
+func loadExcelFile(path string) (excel.ExcelFile, error) {
+	ext := filepath.Ext(path)
+	if ext == ".xls" {
+		return excel.NewExcelFile(path)
+	} else if ext == ".xlsx" {
+		return excel.NewExcelExtendedFile(path)
+	}
+
+	return nil, fmt.Errorf("Unknown file extension %v", ext)
 }

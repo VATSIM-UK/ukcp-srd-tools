@@ -5,13 +5,9 @@ import (
 	"iter"
 	"regexp"
 
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/excel"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
-)
-
-const (
-	NotesSheet  = 4
-	RoutesSheet = 2
 )
 
 var NewRowRegxp = regexp.MustCompile(`^Note (\d+)$`)
@@ -33,12 +29,12 @@ type excelFile interface {
 }
 
 func NewSrdFile(excelFile excelFile) (SrdFile, error) {
-	if !excelFile.HasSheet(RoutesSheet) {
-		return nil, fmt.Errorf("Routes sheet, %d not found", RoutesSheet)
+	if !excelFile.HasSheet(excel.SheetRoutes) {
+		return nil, fmt.Errorf("Routes sheet, %d not found", excel.SheetRoutes)
 	}
 
-	if !excelFile.HasSheet(NotesSheet) {
-		return nil, fmt.Errorf("Notes sheet, %d not found", NotesSheet)
+	if !excelFile.HasSheet(excel.SheetNotes) {
+		return nil, fmt.Errorf("Notes sheet, %d not found", excel.SheetNotes)
 	}
 
 	return &srdFile{excelFile}, nil
@@ -47,7 +43,7 @@ func NewSrdFile(excelFile excelFile) (SrdFile, error) {
 func (f *srdFile) Routes() iter.Seq2[*route.Route, error] {
 	headerRowProcessed := false
 	return func(yield func(*route.Route, error) bool) {
-		for row := range f.file.SheetRows(RoutesSheet) {
+		for row := range f.file.SheetRows(excel.SheetRoutes) {
 			if !headerRowProcessed {
 				headerRowProcessed = true
 				continue
@@ -65,7 +61,7 @@ func (f *srdFile) Notes() iter.Seq2[*note.Note, error] {
 		rowsToProcess := make([][]string, 0)
 		inNote := false
 
-		for row := range f.file.SheetRows(NotesSheet) {
+		for row := range f.file.SheetRows(excel.SheetNotes) {
 			if len(row) == 0 {
 				continue
 			}
@@ -84,7 +80,6 @@ func (f *srdFile) Notes() iter.Seq2[*note.Note, error] {
 			if isHeaderRow && len(rowsToProcess) > 0 {
 				inNote = true
 
-				// TODO: Processing
 				if !yield(mapNote(rowsToProcess)) {
 					return
 				}

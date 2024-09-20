@@ -9,8 +9,8 @@ import (
 )
 
 func mapRoute(row []string) (*route.Route, error) {
-	if len(row) != 8 {
-		return nil, fmt.Errorf("expected 8 fields, got %d, row: %v", len(row), row)
+	if len(row) < 7 {
+		return nil, fmt.Errorf("expected 7 or 8 fields, got %d, row: %v", len(row), row)
 	}
 
 	ADEPOrEntry, err := convertStringField(row, 0, "ADEP or Entry")
@@ -97,6 +97,11 @@ func convertMaxFlightLevelToAltitude(row []string) (*uint64, error) {
 
 // convertNoteIds converts the raw note ID column into a slice of note IDs
 func convertNoteIDs(row []string) ([]uint64, error) {
+	// If the length of the row is less than 8, there are no notes
+	if len(row) < 8 {
+		return nil, nil
+	}
+
 	// The first 7 characters of the remarks are "Notes: ", so exclude that
 	remarks := strings.TrimSpace(row[7])
 	if !strings.HasPrefix(remarks, "Notes: ") {

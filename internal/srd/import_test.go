@@ -185,7 +185,7 @@ func TestImport_Successful(t *testing.T) {
 	require.Equal("3", allMappings[2].note)
 }
 
-func TestImport_ErrorneousRoutes(t *testing.T) {
+func TestImport_ErrornousRoutes(t *testing.T) {
 	ctx := context.Background()
 	require := require.New(t)
 	container, err := getMysqlContainer(ctx, t)
@@ -611,6 +611,69 @@ func BenchmarkImport(b *testing.B) {
 		allocatedBefore := memStats.HeapAlloc
 
 		excelFile, err := excel.NewExcelFile(path)
+		defer excelFile.Close()
+		require.NoError(err)
+
+		file, err := file.NewSrdFile(excelFile)
+		require.NoError(err)
+
+		// Create the importer and go
+		importer := NewImport(file, db)
+
+		err = importer.Import(ctx)
+		require.NoError(err)
+
+		// Get the heap allocated right now
+		runtime.ReadMemStats(memStats)
+		allocatedAfter := memStats.HeapAlloc
+
+		b.Logf("Heap allocated for import: %d", allocatedAfter-allocatedBefore)
+	}
+}
+
+func BenchmarkImportXlsx(b *testing.B) {
+	ctx := context.Background()
+	require := require.New(b)
+	container, err := getMysqlContainer(ctx, b)
+	require.NoError(err)
+	defer container.terminateFunc()
+
+	containerHost, err := container.container.Host(ctx)
+	containerInspect, err := container.container.Inspect(ctx)
+	containerPort := containerInspect.NetworkSettings.Ports["3306/tcp"][0].HostPort
+	// Convert port to int
+	containerPortInt, err := strconv.Atoi(containerPort)
+	require.NoError(err)
+
+	// Create db
+	db, err := db.NewDatabase(db.DatabaseConnectionParams{
+		Host:     containerHost,
+		Port:     containerPortInt,
+		Username: TestUsername,
+		Password: TestPassword,
+		Database: TestDatabase,
+	})
+	require.NoError(err)
+
+	defer db.Close()
+
+	// Reset the benchmark timer
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+
+		path, _ := filepath.Abs("../../test/srd/test.xlsx")
+
+		// Check if the file exists
+		_, err = os.Stat(path)
+		require.NoError(err)
+
+		// Get the heap allocated right now
+		memStats := new(runtime.MemStats)
+		runtime.ReadMemStats(memStats)
+		allocatedBefore := memStats.HeapAlloc
+
+		excelFile, err := excel.NewExcelExtendedFile(path)
 		defer excelFile.Close()
 		require.NoError(err)
 

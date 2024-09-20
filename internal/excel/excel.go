@@ -8,6 +8,11 @@ import (
 	"github.com/youkuang/xls"
 )
 
+const (
+	SheetRoutes = 2
+	SheetNotes  = 4
+)
+
 type ExcelFile interface {
 	Close() error
 	HasSheet(sheet int) bool
