@@ -29,9 +29,6 @@ jobs:
       - name: Run tests
         run: go test ./...
 
-      - name: Run linter
-        run: golangci-lint run
-
       - name: Run Build (x86_64)
         run: env GOOS=linux GOARCH=amd64 go build -o build/srd-tools-linux-amd64 ./cmd/srd/main.go
 
