@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/excel"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/excel"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/note"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/route"
 )
 
 // Mock for excelFile interface

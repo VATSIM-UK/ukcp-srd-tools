@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/airac"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/airac"
 )
 
 type testServer struct {

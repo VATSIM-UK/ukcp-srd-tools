@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/cli"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/cli"
 )
 
 // Where to store files

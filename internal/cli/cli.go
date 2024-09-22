@@ -12,14 +12,14 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/airac"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/db"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/download"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/excel"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/file"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/lock"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/parse"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/srd"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/airac"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/db"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/download"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/excel"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/file"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/lock"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/parse"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/srd"
 )
 
 // CLI is the command line interface structure

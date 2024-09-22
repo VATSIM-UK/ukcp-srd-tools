@@ -3,7 +3,7 @@ package download
 import (
 	"testing"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/airac"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/airac"
 )
 
 func TestDownloadUrl(t *testing.T) {

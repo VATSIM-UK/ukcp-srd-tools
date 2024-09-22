@@ -6,9 +6,9 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/db"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/db"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/note"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/route"
 )
 
 const InsertBatchSize = 250

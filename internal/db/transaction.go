@@ -7,8 +7,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/note"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/route"
 )
 
 type NoteRouteLink struct {

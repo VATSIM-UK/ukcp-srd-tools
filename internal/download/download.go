@@ -10,7 +10,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/airac"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/airac"
 )
 
 type SrdDownloader struct {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/route"
 )
 
 func TestConvertNoteIDs(t *testing.T) {

@@ -5,9 +5,9 @@ import (
 	"iter"
 	"regexp"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/excel"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/excel"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/note"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/route"
 )
 
 var NewRowRegxp = regexp.MustCompile(`^Note (\d+)$`)

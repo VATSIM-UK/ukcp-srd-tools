@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/note"
 )
 
 func TestMapNote_Success(t *testing.T) {

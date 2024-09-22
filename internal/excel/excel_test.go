@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/test/logging"
+	"github.com/VATSIM-UK/ukcp-srd-tools/test/logging"
 )
 
 func TestExcel_ReturnsErrorOnFileNotFound(t *testing.T) {

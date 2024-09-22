@@ -14,11 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/db"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/excel"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/file"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/db"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/excel"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/file"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/note"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/route"
 )
 
 type mysqlContainer struct {

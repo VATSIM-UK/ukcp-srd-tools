@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/note"
 )
 
 // mapNote creates a note from the raw data

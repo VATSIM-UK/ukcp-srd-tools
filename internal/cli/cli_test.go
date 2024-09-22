@@ -16,10 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/airac"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/cli"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/db"
-	"github.com/VATSIM-UK/ukcp-srd-import/test/logging"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/airac"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/cli"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/db"
+	"github.com/VATSIM-UK/ukcp-srd-tools/test/logging"
 )
 
 func TestRun_Airac(t *testing.T) {

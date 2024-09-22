@@ -1,4 +1,4 @@
-module github.com/VATSIM-UK/ukcp-srd-import
+module github.com/VATSIM-UK/ukcp-srd-tools
 
 go 1.23.1
 
