@@ -6,7 +6,7 @@ on:
       - created
 
 jobs:
-  test:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -34,4 +34,4 @@ jobs:
         with:
           files: "build/srd-tools-*"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          release-tag: ${{ github.ref }}
+          release-tag: ${{ github.ref_name }}
