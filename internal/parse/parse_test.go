@@ -8,11 +8,12 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/excel"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/file"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
-	"github.com/stretchr/testify/require"
 )
 
 func TestParse(t *testing.T) {
@@ -179,11 +180,18 @@ type srdRouteList []srdRouteEntry
 type mockSrdFile struct {
 	routes srdRouteList
 	notes  srdNoteList
+	stats  file.SrdStats
 }
 
 func (m *mockSrdFile) Routes() iter.Seq2[*route.Route, error] {
 	return func(yield func(*route.Route, error) bool) {
 		for _, route := range m.routes {
+			if route.err != nil {
+				m.stats.RouteErrorCount++
+			} else {
+				m.stats.RouteCount++
+			}
+
 			if !yield(route.route, route.err) {
 				return
 			}
@@ -194,6 +202,12 @@ func (m *mockSrdFile) Routes() iter.Seq2[*route.Route, error] {
 func (m *mockSrdFile) Notes() iter.Seq2[*note.Note, error] {
 	return func(yield func(*note.Note, error) bool) {
 		for _, note := range m.notes {
+			if note.err != nil {
+				m.stats.NoteErrorCount++
+			} else {
+				m.stats.NoteCount++
+			}
+
 			if !yield(note.note, note.err) {
 				return
 			}
@@ -202,7 +216,7 @@ func (m *mockSrdFile) Notes() iter.Seq2[*note.Note, error] {
 }
 
 func (m *mockSrdFile) Stats() file.SrdStats {
-	return file.SrdStats{}
+	return m.stats
 }
 
 func ptr[V string | uint64](v V) *V {

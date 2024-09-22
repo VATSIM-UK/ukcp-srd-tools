@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
-	_ "github.com/go-sql-driver/mysql"
 )
 
 type NoteRouteLink struct {

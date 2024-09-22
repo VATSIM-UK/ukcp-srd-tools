@@ -3,8 +3,9 @@ package file
 import (
 	"testing"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
 	"github.com/stretchr/testify/require"
+
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
 )
 
 func TestMapNote_Success(t *testing.T) {
@@ -65,4 +66,3 @@ func TestMapNote_MissingNoteText(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, result)
 }
-

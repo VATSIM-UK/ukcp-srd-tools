@@ -2,8 +2,9 @@ package srd
 
 import (
 	"context"
-	"fmt"
 	"iter"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/db"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
@@ -62,7 +63,7 @@ func (i *Import) insertNotes(ctx context.Context, tx *db.Transaction) error {
 	notes := make([]*note.Note, 0)
 	for srdNote, err := range i.file.Notes() {
 		if err != nil {
-			fmt.Printf("invalid note detected: %v\n", err)
+			log.Warn().Msgf("invalid note detected: %v", err)
 			continue
 		}
 
@@ -98,7 +99,7 @@ func (i *Import) insertRoutes(ctx context.Context, tx *db.Transaction) error {
 	routes := make([]*route.Route, 0)
 	for srdRoute, err := range i.file.Routes() {
 		if err != nil {
-			fmt.Printf("invalid route detected: %v\n", err)
+			log.Warn().Msgf("invalid route detected: %v", err)
 			continue
 		}
 

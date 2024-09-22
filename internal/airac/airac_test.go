@@ -4,9 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	clockLib "github.com/benbjohnson/clock"
+	"github.com/stretchr/testify/require"
 )
 
 // Test the CurrentCycle method
@@ -326,6 +325,81 @@ func TestNextCycleFrom(t *testing.T) {
 			clock := clockLib.NewMock()
 			airac := NewAirac(clock)
 			actual := airac.NextCycleFrom(tt.cycle)
+			require.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+// Test the CycleFromIdent method
+func TestCycleFromIdent(t *testing.T) {
+	tests := []struct {
+		name     string
+		ident    string
+		expected *AiracCycle
+		err      error
+	}{
+		{
+			name:  "valid identifier 2401",
+			ident: "2401",
+			expected: &AiracCycle{
+				Ident: "2401",
+				Start: time.Date(2024, time.January, 25, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2024, time.February, 22, 0, 0, 0, 0, time.UTC),
+			},
+			err: nil,
+		},
+		{
+			name:  "valid identifier 2413",
+			ident: "2413",
+			expected: &AiracCycle{
+				Ident: "2413",
+				Start: time.Date(2024, time.December, 26, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2025, time.January, 23, 0, 0, 0, 0, time.UTC),
+			},
+			err: nil,
+		},
+		{
+			name:  "valid identifier 2304",
+			ident: "2304",
+			expected: &AiracCycle{
+				Ident: "2304",
+				Start: time.Date(2023, time.April, 20, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2023, time.May, 18, 0, 0, 0, 0, time.UTC),
+			},
+			err: nil,
+		},
+		{
+			name:     "empty identifier",
+			ident:    "",
+			expected: nil,
+			err:      ErrInvalidAiracIdent,
+		},
+		{
+			name:     "invalid identifier format",
+			ident:    "24A1",
+			expected: nil,
+			err:      ErrInvalidAiracIdent,
+		},
+		{
+			name:     "invalid cycle number",
+			ident:    "2414",
+			expected: nil,
+			err:      ErrInvalidAiracIdent,
+		},
+		{
+			name:     "invalid year",
+			ident:    "10001",
+			expected: nil,
+			err:      ErrInvalidAiracIdent,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clock := clockLib.NewMock()
+			airac := NewAirac(clock)
+			actual, err := airac.CycleFromIdent(tt.ident)
+			require.Equal(t, tt.err, err)
 			require.Equal(t, tt.expected, actual)
 		})
 	}

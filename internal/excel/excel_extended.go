@@ -1,8 +1,10 @@
 package excel
 
 import (
+	"fmt"
 	"iter"
 
+	"github.com/rs/zerolog/log"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -18,7 +20,8 @@ var sheetMap = map[int]string{
 func NewExcelExtendedFile(absPath string) (ExcelFile, error) {
 	file, err := excelize.OpenFile(absPath)
 	if err != nil {
-		return nil, err
+		log.Error().Err(err).Msg("failed to open excel extended file")
+		return nil, fmt.Errorf("failed to open excel extended file: %v", err)
 	}
 
 	return &excelExtendedFile{file}, nil

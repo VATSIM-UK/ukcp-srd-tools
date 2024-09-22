@@ -2,6 +2,8 @@ package airac
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"time"
 
 	clockLib "github.com/benbjohnson/clock"
@@ -11,6 +13,11 @@ const AiracInterval = time.Duration(AiracIntervalDays * time.Hour * 24)
 const AiracIntervalDays = 28
 
 var BaseAiracDate = time.Date(2021, time.January, 28, 0, 0, 0, 0, time.UTC)
+var AiracCycleRegexp = regexp.MustCompile(`^(\d{2})(\d{2})$`)
+
+var (
+	ErrInvalidAiracIdent = fmt.Errorf("invalid AIRAC cycle identifier")
+)
 
 type Airac struct {
 	clock clockLib.Clock
@@ -47,15 +54,49 @@ func (a *Airac) NextCycleFrom(cycle *AiracCycle) *AiracCycle {
 	return a.nextAiracFromDate(cycle.Start)
 }
 
+// CycleFromIdent returns the AIRAC cycle from an identifier
+func (a *Airac) CycleFromIdent(ident string) (*AiracCycle, error) {
+	matches := AiracCycleRegexp.FindStringSubmatch(ident)
+	if matches == nil {
+		return nil, ErrInvalidAiracIdent
+	}
+
+	// The cycle must be between 1 and 13, convert the string to an integer
+	cycle, _ := strconv.Atoi(matches[2])
+	if cycle < 1 || cycle > 13 {
+		return nil, ErrInvalidAiracIdent
+	}
+
+	// Convert the year to an integer
+	year, _ := strconv.Atoi(matches[1])
+
+	// The full year is 2000 + the first two digits of the year
+	cycleYear := 2000 + year
+
+	return a.nthCycleOfYear(cycleYear, cycle), nil
+}
+
+func (a *Airac) nthCycleOfYear(year, cycle int) *AiracCycle {
+	// Get the first airac day of the year
+	firstAirac := a.firstAiracDateOfYear(time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC))
+
+	// The nth cycle is adding the airac interval to the first airac day of the year
+	start := firstAirac.Add(time.Duration((cycle-1)*AiracIntervalDays) * time.Hour * 24)
+
+	return &AiracCycle{
+		Ident: formatAiracIdent(cycle, year),
+		Start: start,
+		End:   start.Add(AiracInterval),
+	}
+}
+
 func (a *Airac) daysSinceBase(date time.Time) int {
 	// Calculate the number of days since the base AIRAC date
 	return int(date.Sub(BaseAiracDate).Hours() / 24)
 }
 
 func (a *Airac) nextAiracFromDate(date time.Time) *AiracCycle {
-	// Calculate the start of the next AIRAC cycle
-	daysIntoCycle := a.daysSinceBase(date) % AiracIntervalDays
-	nextAiracStart := date.Add(AiracInterval - (time.Duration(daysIntoCycle) * time.Hour * 24))
+	nextAiracStart := a.nextAiracDateFromDate(date)
 
 	return &AiracCycle{
 		Ident: a.identFromStartDate(nextAiracStart),
@@ -80,9 +121,17 @@ func (a *Airac) identFromStartDate(start time.Time) string {
 	return formatAiracIdent(cycleNumber, start.Year())
 }
 
+func (a *Airac) nextAiracDateFromDate(date time.Time) time.Time {
+	daysIntoCycle := a.daysSinceBase(date) % AiracIntervalDays
+	return date.Add(AiracInterval - (time.Duration(daysIntoCycle) * time.Hour * 24))
+}
+
 func (a *Airac) firstAiracDateOfYear(start time.Time) time.Time {
-	// Get the start of the year date
-	return time.Date(start.Year(), time.January, 1, 0, 0, 0, 0, time.UTC)
+	// Get the last day of the previous year
+	lastDayOfPreviousYear := time.Date(start.Year()-1, time.December, 31, 0, 0, 0, 0, time.UTC)
+
+	// Now get the next airac day
+	return a.nextAiracDateFromDate(lastDayOfPreviousYear)
 }
 
 func (a *Airac) previousAiracDayFromDate(date time.Time) time.Time {

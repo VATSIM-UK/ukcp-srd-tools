@@ -1,7 +1,6 @@
 package download
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -9,14 +8,21 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/airac"
 )
 
 type SrdDownloader struct {
 	cycle              *airac.AiracCycle
-	loadedCycleFile    *os.File
+	loadedCycle        loadedAirac
 	latestDownloadFile *os.File
 	downloadUrl        string
+}
+
+type loadedAirac interface {
+	Ident() string
+	Is(ident string) bool
 }
 
 var (
@@ -26,11 +32,7 @@ var (
 	ErrDownloadChecksumFailed  = errors.New("failed to calculate checksum of downloaded cycle file")
 )
 
-func NewSrdDownloader(cycle *airac.AiracCycle, fileDir, downloadUrl string) (*SrdDownloader, error) {
-	loadedCycleFile, err := loadCycleFile(fileDir)
-	if err != nil {
-		return nil, err
-	}
+func NewSrdDownloader(cycle *airac.AiracCycle, loadedCycle loadedAirac, fileDir, downloadUrl string) (*SrdDownloader, error) {
 	latestDownloadFile, err := loadLatestDownloadFile(fileDir)
 	if err != nil {
 		return nil, err
@@ -38,34 +40,27 @@ func NewSrdDownloader(cycle *airac.AiracCycle, fileDir, downloadUrl string) (*Sr
 
 	return &SrdDownloader{
 		cycle:              cycle,
-		loadedCycleFile:    loadedCycleFile,
+		loadedCycle:        loadedCycle,
 		latestDownloadFile: latestDownloadFile,
 		downloadUrl:        downloadUrl,
 	}, nil
 }
 
 func (d *SrdDownloader) Download(ctx context.Context, force bool) error {
-	d.loadedCycleFile.Seek(0, 0)
-	scanner := bufio.NewScanner(d.loadedCycleFile)
-	scanner.Split(bufio.ScanWords)
-
-	scanner.Scan()
-	if err := scanner.Err(); err != nil {
-		return ErrFailedToScanLoadedCycle
-	}
-
-	loadedCycle := scanner.Text()
-	fmt.Printf("Loaded cycle is %v\n", loadedCycle)
-	fmt.Printf("Latest cycle is %v\n", d.cycle.Ident)
+	log.Debug().Msg("Starting SRD download")
+	log.Debug().Msg("Checking if SRD is up to date")
+	log.Debug().Msgf("Loaded cycle is %v", d.loadedCycle.Ident())
+	log.Debug().Msgf("Latest cycle is %v", d.cycle.Ident)
 
 	// We already have the latest cycle
-	if loadedCycle == d.cycle.Ident && !force {
+	if d.loadedCycle.Is(d.cycle.Ident) && !force {
+		log.Info().Msg("SRD is up to date")
 		return ErrUpToDate
 	}
 
 	// So we need to download the latest cycle
 	client := http.DefaultClient
-	fmt.Printf("Downloading SRD file from %v\n", d.downloadUrl)
+	log.Debug().Msgf("Downloading SRD file from %v", d.downloadUrl)
 	req, err := http.NewRequestWithContext(ctx, "GET", d.downloadUrl, nil)
 	if err != nil {
 		return err
@@ -79,7 +74,9 @@ func (d *SrdDownloader) Download(ctx context.Context, force bool) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Unable to download SRD, status code was %s", resp.Status)
+		msg := fmt.Sprintf("unable to download SRD, status code was %s", resp.Status)
+		log.Error().Msg(msg)
+		return errors.New(msg)
 	}
 
 	// Write the response body into a temporary file
@@ -90,7 +87,7 @@ func (d *SrdDownloader) Download(ctx context.Context, force bool) error {
 	defer tempFile.Close()
 
 	_, err = io.Copy(tempFile, resp.Body)
-	fmt.Printf("Downloaded SRD file to %v\n", tempFile.Name())
+	log.Debug().Msgf("Downloaded SRD file to %v", tempFile.Name())
 	// Now we'll write the downloaded file to the latest download file
 	tempFile.Seek(0, 0)
 	d.latestDownloadFile.Truncate(0)
@@ -101,25 +98,13 @@ func (d *SrdDownloader) Download(ctx context.Context, force bool) error {
 		return err
 	}
 
-	// And finally, write the airac ident to the loaded cycle file
-	err = d.loadedCycleFile.Truncate(0)
-	d.loadedCycleFile.Seek(0, 0)
-	if err != nil {
-		return err
-	}
-
-	_, err = d.loadedCycleFile.Write([]byte(d.cycle.Ident))
-	if err != nil {
-		return err
-	}
-
 	// Delete the temporary file
 	err = os.Remove(tempFile.Name())
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Finished SRD download for cycle %v\n", d.cycle.Ident)
+	log.Info().Msg("finished SRD download")
 	return d.completeDownload()
 }
 
@@ -128,20 +113,11 @@ func (d *SrdDownloader) LatestFileLocation() string {
 }
 
 func (d *SrdDownloader) completeDownload() error {
-	err := d.loadedCycleFile.Close()
-	if err != nil {
-		return err
-	}
-
 	return d.latestDownloadFile.Close()
 }
 
 func filePath(dir, file string) string {
 	return fmt.Sprintf("%s/%s", dir, file)
-}
-
-func loadCycleFile(dir string) (*os.File, error) {
-	return os.OpenFile(filePath(dir, "ukcp-srd-import-loaded-cycle"), os.O_RDWR|os.O_CREATE, 0600)
 }
 
 func loadLatestDownloadFile(dir string) (*os.File, error) {

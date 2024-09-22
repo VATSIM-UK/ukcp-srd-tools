@@ -5,10 +5,12 @@ import (
 	"iter"
 	"testing"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/excel"
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
 )
 
 // Mock for excelFile interface
@@ -44,23 +46,23 @@ func TestNewSrdFile(t *testing.T) {
 		{
 			name: "Routes sheet not found",
 			hasSheet: map[int]bool{
-				RoutesSheet: false,
+				excel.SheetRoutes: false,
 			},
 			expectedError: errors.New("Routes sheet, 2 not found"),
 		},
 		{
 			name: "Notes sheet not found",
 			hasSheet: map[int]bool{
-				RoutesSheet: true,
-				NotesSheet:  false,
+				excel.SheetRoutes: true,
+				excel.SheetNotes:  false,
 			},
 			expectedError: errors.New("Notes sheet, 4 not found"),
 		},
 		{
 			name: "Both sheets found",
 			hasSheet: map[int]bool{
-				RoutesSheet: true,
-				NotesSheet:  true,
+				excel.SheetRoutes: true,
+				excel.SheetNotes:  true,
 			},
 			expectedError: nil,
 		},
@@ -104,8 +106,8 @@ func TestRoutes(t *testing.T) {
 		{
 			name: "No routes",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet:  {},
+				excel.SheetRoutes: {},
+				excel.SheetNotes:  {},
 			},
 			expectedRoutes: nil,
 			expectedErrors: nil,
@@ -113,11 +115,11 @@ func TestRoutes(t *testing.T) {
 		{
 			name: "Single route",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {
+				excel.SheetRoutes: {
 					{"Some", "Header", "Row"},
 					{"EGLL", "SID1", "350", "370", "SEGMENT", "STAR1", "EGKK", "Notes: 123-456"},
 				},
-				NotesSheet: {},
+				excel.SheetNotes: {},
 			},
 			expectedRoutes: []*route.Route{
 				route.NewRoute("EGLL", ptr("SID1"), ptr(uint64(35000)), ptr(uint64(37000)), "SEGMENT", ptr("STAR1"), "EGKK", []uint64{123, 456}),
@@ -127,12 +129,12 @@ func TestRoutes(t *testing.T) {
 		{
 			name: "Multiple routes",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {
+				excel.SheetRoutes: {
 					{"Some", "Header", "Row"},
 					{"EGLL", "SID1", "350", "370", "SEGMENT", "STAR1", "EGKK", "Notes: 123-456"},
 					{"EGKK", "SID2", "370", "390", "SEGMENT", "STAR2", "EGLL", "Notes: 789-012"},
 				},
-				NotesSheet: {},
+				excel.SheetNotes: {},
 			},
 			expectedRoutes: []*route.Route{
 				route.NewRoute("EGLL", ptr("SID1"), ptr(uint64(35000)), ptr(uint64(37000)), "SEGMENT", ptr("STAR1"), "EGKK", []uint64{123, 456}),
@@ -143,12 +145,12 @@ func TestRoutes(t *testing.T) {
 		{
 			name: "Invalid route",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {
+				excel.SheetRoutes: {
 					{"Some", "Header", "Row"},
 					{"EGLL", "SID1", "350", "370", "SEGMENT", "STAR1", "EGKK", "Notes: 123-abc"},
 					{"EGKK", "SID2", "370", "390", "SEGMENT", "STAR2", "EGLL", "Notes: 789-012"},
 				},
-				NotesSheet: {},
+				excel.SheetNotes: {},
 			},
 			expectedRoutes: []*route.Route{
 				nil,
@@ -192,8 +194,8 @@ func TestNotes(t *testing.T) {
 		{
 			name: "No notes",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet:  {},
+				excel.SheetRoutes: {},
+				excel.SheetNotes:  {},
 			},
 			expectedNotes:  nil,
 			expectedErrors: nil,
@@ -201,8 +203,8 @@ func TestNotes(t *testing.T) {
 		{
 			name: "Empty line",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet: {
+				excel.SheetRoutes: {},
+				excel.SheetNotes: {
 					{""},
 				},
 			},
@@ -212,8 +214,8 @@ func TestNotes(t *testing.T) {
 		{
 			name: "Empty string",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet: {
+				excel.SheetRoutes: {},
+				excel.SheetNotes: {
 					{""},
 				},
 			},
@@ -223,8 +225,8 @@ func TestNotes(t *testing.T) {
 		{
 			name: "Single note",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet: {
+				excel.SheetRoutes: {},
+				excel.SheetNotes: {
 					{"Note 1"},
 					{"Some Note Content"},
 				},
@@ -240,8 +242,8 @@ func TestNotes(t *testing.T) {
 		{
 			name: "Multiple notes",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet: {
+				excel.SheetRoutes: {},
+				excel.SheetNotes: {
 					{"Note 1"},
 					{"Some Note Content"},
 					{"Note 2"},
@@ -263,8 +265,8 @@ func TestNotes(t *testing.T) {
 		{
 			name: "Note with multiple lines",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet: {
+				excel.SheetRoutes: {},
+				excel.SheetNotes: {
 					{"Note 1"},
 					{"Some Note Content"},
 					{"Another Note Content"},
@@ -281,8 +283,8 @@ func TestNotes(t *testing.T) {
 		{
 			name: "Multiple notes with multiple lines",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet: {
+				excel.SheetRoutes: {},
+				excel.SheetNotes: {
 					{"Note 1"},
 					{"Some Note Content"},
 					{"Another Note Content"},
@@ -306,8 +308,8 @@ func TestNotes(t *testing.T) {
 		{
 			name: "Note with scenario row",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet: {
+				excel.SheetRoutes: {},
+				excel.SheetNotes: {
 					{"Note 1"},
 					{"Some Note Content"},
 					{"Scenario S1"},
@@ -330,8 +332,8 @@ func TestNotes(t *testing.T) {
 		{
 			name: "Notes ending with multiple blank lines",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet: {
+				excel.SheetRoutes: {},
+				excel.SheetNotes: {
 					{"Note 1"},
 					{"Some Note Content"},
 					{""},
@@ -349,8 +351,8 @@ func TestNotes(t *testing.T) {
 		{
 			name: "Notes ending with multiple scenario rows",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet: {
+				excel.SheetRoutes: {},
+				excel.SheetNotes: {
 					{"Note 1"},
 					{"Some Note Content"},
 					{"Scenario S1"},
@@ -370,8 +372,8 @@ func TestNotes(t *testing.T) {
 		{
 			name: "Invalid note",
 			sheetRows: map[int][][]string{
-				RoutesSheet: {},
-				NotesSheet: {
+				excel.SheetRoutes: {},
+				excel.SheetNotes: {
 					{"Note abc"},
 					{"Some Note Content"},
 				},

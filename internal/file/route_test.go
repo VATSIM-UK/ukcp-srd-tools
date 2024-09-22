@@ -3,8 +3,9 @@ package file
 import (
 	"testing"
 
-	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
 	"github.com/stretchr/testify/require"
+
+	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
 )
 
 func TestConvertNoteIDs(t *testing.T) {
@@ -150,8 +151,23 @@ func TestMapRoute(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Valid route no remarks",
+			row:  []string{"EGLL", "SID1", "350", "370", "SEGMENT", "STAR1", "EGKK"},
+			expected: route.NewRoute(
+				"EGLL",
+				func() *string { v := "SID1"; return &v }(),
+				func() *uint64 { v := uint64(35000); return &v }(),
+				func() *uint64 { v := uint64(37000); return &v }(),
+				"SEGMENT",
+				func() *string { v := "STAR1"; return &v }(),
+				"EGKK",
+				nil,
+			),
+			wantErr: false,
+		},
+		{
 			name:     "Invalid number of fields",
-			row:      []string{"EGLL", "SID1", "350", "370", "SEGMENT", "STAR1", "EGKK"},
+			row:      []string{"EGLL", "SID1", "350", "370", "SEGMENT", "STAR1"},
 			expected: nil,
 			wantErr:  true,
 		},

@@ -3,8 +3,8 @@ package excel
 import (
 	"io"
 	"iter"
-	"log"
 
+	"github.com/rs/zerolog/log"
 	"github.com/youkuang/xls"
 )
 
@@ -27,7 +27,7 @@ type excelFile struct {
 func NewExcelFile(absPath string) (ExcelFile, error) {
 	file, closer, err := xls.OpenWithCloser(absPath, "utf-8")
 	if err != nil {
-		log.Printf("Failed to open file: %v", err)
+		log.Error().Err(err).Msg("failed to open excel file")
 		return nil, err
 	}
 
@@ -47,7 +47,7 @@ func (f *excelFile) SheetRows(sheet int) iter.Seq[[]string] {
 		worksheet := f.file.GetSheet(sheet)
 
 		rowNumber := 0
-		for rowNumber < int(worksheet.MaxRow) {
+		for rowNumber <= int(worksheet.MaxRow) {
 			row := worksheet.Row(rowNumber)
 			if !yield(rowToColumns(row)) {
 				rowNumber++

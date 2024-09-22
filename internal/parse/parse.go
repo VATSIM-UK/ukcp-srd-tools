@@ -3,6 +3,8 @@ package parse
 import (
 	"iter"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/file"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/note"
 	"github.com/VATSIM-UK/ukcp-srd-import/internal/route"
@@ -16,10 +18,16 @@ type srdFile interface {
 
 // ParseSrd parses the SRD file and returns a summary of the parsing
 func ParseSrd(file srdFile) file.SrdStats {
-	for range file.Routes() {
+	for _, err := range file.Routes() {
+		if err != nil {
+			log.Error().Msgf("Error parsing route: %v", err)
+		}
 	}
 
-	for range file.Notes() {
+	for _, err := range file.Notes() {
+		if err != nil {
+			log.Error().Msgf("Error parsing note: %v", err)
+		}
 	}
 
 	return file.Stats()
