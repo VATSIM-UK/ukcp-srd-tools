@@ -27,3 +27,13 @@ go.work.sum
 # Excel files
 *.xlsx
 *.xls
+
+# Except those in the test/data directory
+!test/data/**
+
+# Everything in build except .gitkeep
+build/**
+!build/.gitkeep
+
+# Mac OS X Finder directory files
+.DS_Store
