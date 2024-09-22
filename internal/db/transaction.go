@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
 
@@ -42,7 +41,7 @@ func (t *Transaction) InsertNoteBatch(ctx context.Context, notes []*note.Note) e
 		if i > 0 {
 			queryString += ", "
 		}
-		queryString += fmt.Sprintf("(?, ?)")
+		queryString += "(?, ?)"
 		queryArgs = append(queryArgs, note.ID(), note.Text())
 	}
 
@@ -68,7 +67,7 @@ func (t *Transaction) InsertRouteBatch(ctx context.Context, routes []*route.Rout
 		if i > 0 {
 			queryString += ", "
 		}
-		queryString += fmt.Sprintf("(?, ?, ?, ?, ?, ?, ?)")
+		queryString += "(?, ?, ?, ?, ?, ?, ?)"
 		queryArgs = append(queryArgs, route.ADEPOrEntry(), route.ADESOrExit(), route.MinLevel(), route.MaxLevel(), route.RouteSegment(), route.SID(), route.STAR())
 	}
 

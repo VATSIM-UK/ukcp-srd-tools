@@ -205,11 +205,11 @@ func doAirac() error {
 // doImport imports an SRD file into the database
 // it requires that the process lock is acquired before calling this function
 func doImport(filePath string, cycle string, envPath string, fileDir string) error {
-	lock, err := processLock()
+	unlock, err := processLock()
 	if err != nil {
 		return err
 	}
-	defer lock.Unlock()
+	defer unlock()
 
 	return importProcess(filePath, cycle, envPath, fileDir)
 }
@@ -284,12 +284,11 @@ func importProcess(filePath string, cycle string, envPath string, fileDir string
 
 // doDownload downloads the SRD file and imports it into the database
 func doDownload(force bool, forceCycle string, envPath string, fileDir string) error {
-	processLock, err := processLock()
+	unlock, err := processLock()
 	if err != nil {
 		return err
 	}
-
-	defer processLock.Unlock()
+	defer unlock()
 
 	// Get the current AIRAC cycle
 	airacManager := airac.NewAirac(nil)
@@ -406,7 +405,7 @@ func getDatabaseConnectionParams() (db.DatabaseConnectionParams, error) {
 }
 
 // processLock attempts to acquire a process lock to prevent multiple instances of the application running
-func processLock() (*lock.Lock, error) {
+func processLock() (func(), error) {
 	lockfile, err := lock.NewLock()
 	if err == lock.ErrAlreadyLocked {
 		return nil, ErrAlreadyRunning
@@ -414,5 +413,10 @@ func processLock() (*lock.Lock, error) {
 		return nil, ErrFailedProcessLock
 	}
 
-	return lockfile, nil
+	return func() {
+		err := lockfile.Unlock()
+		if err != nil {
+			log.Error().Err(err).Msg("failed to unlock process lock")
+		}
+	}, nil
 }

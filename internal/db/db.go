@@ -6,6 +6,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/rs/zerolog/log"
 )
 
 type Database struct {
@@ -55,7 +56,11 @@ func (d *Database) Transaction(f func(tx *Transaction) error) error {
 	transactionWrapper := &Transaction{tx: tx}
 	err = f(transactionWrapper)
 	if err != nil {
-		tx.Rollback()
+		dbErr := tx.Rollback()
+		if dbErr != nil {
+			log.Error().Err(dbErr).Msg("failed to rollback transaction")
+		}
+
 		return err
 	}
 

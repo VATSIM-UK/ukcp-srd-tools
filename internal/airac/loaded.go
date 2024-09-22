@@ -46,9 +46,17 @@ func (l *LoadedAirac) Close() error {
 }
 
 func (l *LoadedAirac) Set(cycle *AiracCycle) error {
-	l.loadedCycleFile.Seek(0, 0)
-	l.loadedCycleFile.Truncate(0)
-	_, err := l.loadedCycleFile.WriteString(cycle.Ident)
+	_, err := l.loadedCycleFile.Seek(0, 0)
+	if err != nil {
+		return fmt.Errorf("failed to seek loaded cycle file: %w", err)
+	}
+
+	err = l.loadedCycleFile.Truncate(0)
+	if err != nil {
+		return fmt.Errorf("failed to truncate loaded cycle file: %w", err)
+	}
+
+	_, err = l.loadedCycleFile.WriteString(cycle.Ident)
 	return err
 }
 

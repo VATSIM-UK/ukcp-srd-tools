@@ -22,7 +22,11 @@ type testServer struct {
 func (t *testServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.callCount++
 	w.WriteHeader(t.statusCode)
-	w.Write([]byte(t.body))
+	_, err := w.Write([]byte(t.body))
+
+	if err != nil {
+		panic(err)
+	}
 }
 
 func getTestServer(statusCode int, body string) *testServer {
@@ -78,8 +82,9 @@ func TestDownloader_SubsequentDownloads(t *testing.T) {
 	// Create the previous file
 	previousFile, err := os.Create(tempDir + "/ukcp-srd-import-loaded-download.xlsx")
 	require.NoError(err)
-	previousFile.Write([]byte("previous file"))
-	previousFile.Close()
+	_, err = previousFile.Write([]byte("previous file"))
+	require.NoError(err)
+	require.NoError(previousFile.Close())
 
 	d, err := NewSrdDownloader(nextCycle, &mockLoadedAirac{ident: "ABCD"}, tempDir, ts.server.URL)
 	require.NoError(err)
@@ -115,8 +120,9 @@ func TestDownloader_AlreadyUpToDate(t *testing.T) {
 	// Create the version file
 	versionFile, err := os.Create(tempDir + "/ukcp-srd-import-loaded-cycle")
 	require.NoError(err)
-	versionFile.Write([]byte(cycle.Ident))
-	versionFile.Close()
+	_, err = versionFile.Write([]byte(cycle.Ident))
+	require.NoError(err)
+	require.NoError(versionFile.Close())
 
 	d, err := NewSrdDownloader(cycle, &mockLoadedAirac{ident: cycle.Ident}, tempDir, ts.server.URL)
 	require.NoError(err)

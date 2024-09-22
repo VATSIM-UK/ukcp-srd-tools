@@ -87,14 +87,31 @@ func (d *SrdDownloader) Download(ctx context.Context, force bool) error {
 	defer tempFile.Close()
 
 	_, err = io.Copy(tempFile, resp.Body)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to write downloaded SRD file to disk")
+		return err
+	}
+
 	log.Debug().Msgf("Downloaded SRD file to %v", tempFile.Name())
 	// Now we'll write the downloaded file to the latest download file
-	tempFile.Seek(0, 0)
-	d.latestDownloadFile.Truncate(0)
-	d.latestDownloadFile.Seek(0, 0)
-	_, err = io.Copy(d.latestDownloadFile, tempFile)
-
+	_, err = tempFile.Seek(0, 0)
 	if err != nil {
+		return err
+	}
+
+	err = d.latestDownloadFile.Truncate(0)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.latestDownloadFile.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(d.latestDownloadFile, tempFile)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to copy downloaded SRD file to latest download file")
 		return err
 	}
 

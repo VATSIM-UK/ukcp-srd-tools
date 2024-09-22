@@ -50,7 +50,6 @@ func (f *excelFile) SheetRows(sheet int) iter.Seq[[]string] {
 		for rowNumber <= int(worksheet.MaxRow) {
 			row := worksheet.Row(rowNumber)
 			if !yield(rowToColumns(row)) {
-				rowNumber++
 				return
 			}
 			rowNumber++
