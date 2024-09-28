@@ -85,6 +85,9 @@ var (
 
 // Run runs the CLI, parsing the command line arguments and executing the appropriate command
 func Run(dir string) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	cmd := kong.Parse(&CLI)
 	configureLogging()
 
@@ -92,11 +95,11 @@ func Run(dir string) error {
 	case "parse <filename>":
 		return doParse()
 	case "import <cycle> <filename>":
-		return doImport(CLI.Import.Filename, CLI.Import.Cycle, CLI.Import.EnvPath, dir)
+		return doImport(ctx, CLI.Import.Filename, CLI.Import.Cycle, CLI.Import.EnvPath, dir)
 	case "airac":
 		return doAirac()
 	case "download":
-		return doDownload(CLI.Download.Force, CLI.Download.Cycle, CLI.Download.EnvPath, dir)
+		return doDownload(ctx, CLI.Download.Force, CLI.Download.Cycle, CLI.Download.EnvPath, dir)
 	case "loaded":
 		return doLoaded(dir)
 	default:
@@ -204,18 +207,18 @@ func doAirac() error {
 
 // doImport imports an SRD file into the database
 // it requires that the process lock is acquired before calling this function
-func doImport(filePath string, cycle string, envPath string, fileDir string) error {
+func doImport(ctx context.Context, filePath string, cycle string, envPath string, fileDir string) error {
 	unlock, err := processLock()
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	return importProcess(filePath, cycle, envPath, fileDir)
+	return importProcess(ctx, filePath, cycle, envPath, fileDir)
 }
 
 // importProcess performs the import process and is shared between the import command and the download command
-func importProcess(filePath string, cycle string, envPath string, fileDir string) error {
+func importProcess(ctx context.Context, filePath string, cycle string, envPath string, fileDir string) error {
 	// Get the filename from the command line
 	path, _ := filepath.Abs(filePath)
 
@@ -268,7 +271,7 @@ func importProcess(filePath string, cycle string, envPath string, fileDir string
 	// Create the importer and go
 	importer := srd.NewImport(file, db)
 
-	err = importer.Import(context.Background())
+	err = importer.Import(ctx)
 	if err != nil {
 		return err
 	}
@@ -293,7 +296,7 @@ func importProcess(filePath string, cycle string, envPath string, fileDir string
 }
 
 // doDownload downloads the SRD file and imports it into the database
-func doDownload(force bool, forceCycle string, envPath string, fileDir string) error {
+func doDownload(ctx context.Context, force bool, forceCycle string, envPath string, fileDir string) error {
 	unlock, err := processLock()
 	if err != nil {
 		return err
@@ -329,7 +332,7 @@ func doDownload(force bool, forceCycle string, envPath string, fileDir string) e
 		return err
 	}
 
-	err = downloader.Download(context.Background(), force)
+	err = downloader.Download(ctx, force)
 	if err == download.ErrUpToDate {
 		return ErrUpToDate
 	} else if err != nil {
@@ -337,7 +340,7 @@ func doDownload(force bool, forceCycle string, envPath string, fileDir string) e
 	}
 
 	// Download happened, so now we do the import
-	return importProcess(downloader.LatestFileLocation(), cycleToDownload.Ident, envPath, fileDir)
+	return importProcess(ctx, downloader.LatestFileLocation(), cycleToDownload.Ident, envPath, fileDir)
 }
 
 // loadSrdFile loads an SRD file from the given path
