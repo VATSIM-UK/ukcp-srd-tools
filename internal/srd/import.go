@@ -11,7 +11,7 @@ import (
 	"github.com/VATSIM-UK/ukcp-srd-tools/internal/route"
 )
 
-const InsertBatchSize = 250
+const InsertBatchSize = 5000
 
 type srdFile interface {
 	Routes() iter.Seq2[*route.Route, error]
