@@ -36,15 +36,15 @@ func NewDatabase(params DatabaseConnectionParams) (*Database, error) {
 	}
 
 	// Set the max connections and connection lifetime
-	db.SetMaxOpenConns(10)
-	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetMaxOpenConns(1)
+	db.SetConnMaxLifetime(2 * time.Minute)
 
 	return &Database{db: db}, nil
 }
 
 // Close closes the database connection
-func (d *Database) Close() {
-	d.db.Close()
+func (d *Database) Close() error {
+	return d.db.Close()
 }
 
 func (d *Database) Transaction(f func(tx *Transaction) error) error {

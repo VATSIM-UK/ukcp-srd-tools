@@ -259,7 +259,11 @@ func importProcess(filePath string, cycle string, envPath string, fileDir string
 		return err
 	}
 
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close database connection")
+		}
+	}()
 
 	// Create the importer and go
 	importer := srd.NewImport(file, db)
