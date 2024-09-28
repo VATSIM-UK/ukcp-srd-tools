@@ -21,13 +21,13 @@ jobs:
         run: go mod tidy
 
       - name: Run Build (x86_64)
-        run: env GOOS=linux GOARCH=amd64 go build -o build/srd-tools-linux-amd64 ./cmd/srd/main.go
+        run: env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/srd-tools-linux-amd64 ./cmd/srd/main.go
 
       - name: Run Build (ARM 64)
-        run: env GOOS=linux GOARCH=arm64 go build -o build/srd-tools-linux-arm64 ./cmd/srd/main.go
+        run: env GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o build/srd-tools-linux-arm64 ./cmd/srd/main.go
 
       - name: Run Build (MacOS Silicon)
-        run: env GOOS=darwin GOARCH=arm64 go build -o build/srd-tools-darwin-arm64 ./cmd/srd/main.go
+        run: env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o build/srd-tools-darwin-arm64 ./cmd/srd/main.go
 
       - name: Upload Release Assets
         uses: AButler/upload-release-assets@v3.0
