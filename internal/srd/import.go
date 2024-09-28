@@ -3,6 +3,7 @@ package srd
 import (
 	"context"
 	"iter"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -12,6 +13,7 @@ import (
 )
 
 const InsertBatchSize = 5000
+const InterBatchWait = 1 * time.Second
 
 type srdFile interface {
 	Routes() iter.Seq2[*route.Route, error]
@@ -75,7 +77,7 @@ func (i *Import) insertNotes(ctx context.Context, tx *db.Transaction) error {
 
 		// Insert the notes in batches
 		if len(notes) >= InsertBatchSize {
-			err := tx.InsertNoteBatch(ctx, notes)
+			err := i.insertNoteBatch(ctx, tx, notes)
 			if err != nil {
 				return err
 			}
@@ -86,11 +88,23 @@ func (i *Import) insertNotes(ctx context.Context, tx *db.Transaction) error {
 
 	// Insert any remaining notes
 	if len(notes) > 0 {
-		err := tx.InsertNoteBatch(ctx, notes)
+		err := i.insertNoteBatch(ctx, tx, notes)
 		if err != nil {
 			return err
 		}
 	}
+
+	return nil
+}
+
+// insertNoteBatch inserts a batch of notes into the database and then waits for a bit
+func (i *Import) insertNoteBatch(ctx context.Context, tx *db.Transaction, batch []*note.Note) error {
+	if err := tx.InsertNoteBatch(ctx, batch); err != nil {
+		return err
+	}
+
+	// Wait for a bit to avoid overwhelming the database
+	i.interBatchWait()
 
 	return nil
 }
@@ -112,6 +126,9 @@ func (i *Import) insertRoutes(ctx context.Context, tx *db.Transaction) error {
 				return err
 			}
 			routes = make([]*route.Route, 0)
+
+			// Wait for a bit to avoid overwhelming the database
+			i.interBatchWait()
 		}
 	}
 
@@ -144,6 +161,9 @@ func (i *Import) insertRouteBatch(ctx context.Context, tx *db.Transaction, batch
 		}
 	}
 
+	// Wait for a bit to avoid overwhelming the database
+	i.interBatchWait()
+
 	return nil
 }
 
@@ -156,7 +176,7 @@ func (i *Import) insertRouteNoteLinks(ctx context.Context, tx *db.Transaction) e
 
 			// Insert the links in batches
 			if len(links) >= InsertBatchSize {
-				err := tx.InsertNoteRouteLinkBatch(ctx, links)
+				err := i.insertRouteNoteBatch(ctx, tx, links)
 				if err != nil {
 					return err
 				}
@@ -167,8 +187,20 @@ func (i *Import) insertRouteNoteLinks(ctx context.Context, tx *db.Transaction) e
 
 	// Insert any remaining links
 	if len(links) > 0 {
-		return tx.InsertNoteRouteLinkBatch(ctx, links)
+		return i.insertRouteNoteBatch(ctx, tx, links)
 	}
+
+	return nil
+}
+
+// insertRouteNoteBatch inserts a batch of note-route links into the database and then waits for a bit
+func (i *Import) insertRouteNoteBatch(ctx context.Context, tx *db.Transaction, batch []*db.NoteRouteLink) error {
+	if err := tx.InsertNoteRouteLinkBatch(ctx, batch); err != nil {
+		return err
+	}
+
+	// Wait for a bit to avoid overwhelming the database
+	i.interBatchWait()
 
 	return nil
 }
@@ -180,4 +212,9 @@ func (i *Import) deleteCurrentData(ctx context.Context, tx *db.Transaction) erro
 	}
 
 	return tx.DeleteAllNotes(ctx)
+}
+
+// If we import too quickly, we might overwhelm the database, so we should wait between batches
+func (i *Import) interBatchWait() {
+	time.Sleep(InterBatchWait)
 }
