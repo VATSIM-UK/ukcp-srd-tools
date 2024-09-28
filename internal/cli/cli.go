@@ -224,6 +224,12 @@ func importProcess(filePath string, cycle string, envPath string, fileDir string
 		return err
 	}
 
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close SRD file")
+		}
+	}()
+
 	// Check the cycle is valid
 	airacCycles := airac.NewAirac(nil)
 	airacCycle, err := airacCycles.CycleFromIdent(cycle)

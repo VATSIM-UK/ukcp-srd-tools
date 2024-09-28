@@ -17,6 +17,7 @@ type SrdFile interface {
 	Routes() iter.Seq2[*route.Route, error]
 	Notes() iter.Seq2[*note.Note, error]
 	Stats() SrdStats
+	Close() error
 }
 
 type SrdStats struct {
@@ -167,6 +168,10 @@ func (f *srdFile) Notes() iter.Seq2[*note.Note, error] {
 			yieldWrapper(mapNote(rowsToProcess))
 		}
 	}
+}
+
+func (f *srdFile) Close() error {
+	return f.file.Close()
 }
 
 func (f *srdFile) incrementNoteStats(err error) {
