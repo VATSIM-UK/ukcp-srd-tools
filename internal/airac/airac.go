@@ -39,6 +39,16 @@ type AiracCycle struct {
 	End   time.Time
 }
 
+func (c *AiracCycle) GetYear() int {
+	val, _ := strconv.Atoi(c.Ident[:2])
+	return val
+}
+
+func (c *AiracCycle) GetMonth() int {
+	val, _ := strconv.Atoi(c.Ident[2:])
+	return val
+}
+
 // GetCurrentAirac returns the current AIRAC cycle
 func (a *Airac) CurrentCycle() *AiracCycle {
 	return a.nextAiracFromDate(a.previousAiracDayFromDate(a.currentDay()).Add(-time.Hour * 24))
