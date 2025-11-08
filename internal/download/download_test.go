@@ -41,7 +41,6 @@ func getTestServer(statusCode int, body string) *testServer {
 func createZipWithExcel(excelContent string) []byte {
 	buf := new(bytes.Buffer)
 	writer := zip.NewWriter(buf)
-	defer writer.Close()
 
 	// Create an entry for an Excel file in the zip
 	excelFile, err := writer.Create("SRD.xlsx")
@@ -50,6 +49,11 @@ func createZipWithExcel(excelContent string) []byte {
 	}
 
 	_, err = excelFile.Write([]byte(excelContent))
+	if err != nil {
+		panic(err)
+	}
+
+	err = writer.Close()
 	if err != nil {
 		panic(err)
 	}
