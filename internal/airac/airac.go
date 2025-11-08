@@ -39,16 +39,6 @@ type AiracCycle struct {
 	End   time.Time
 }
 
-func (c *AiracCycle) GetYear() int {
-	val, _ := strconv.Atoi(c.Ident[:2])
-	return val
-}
-
-func (c *AiracCycle) GetMonth() int {
-	val, _ := strconv.Atoi(c.Ident[2:])
-	return val
-}
-
 func (c *AiracCycle) YearString() string {
 	return c.Ident[:2]
 }

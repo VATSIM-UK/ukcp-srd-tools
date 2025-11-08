@@ -1,12 +1,14 @@
 package download
 
 import (
+	"archive/zip"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/rs/zerolog/log"
 
@@ -93,25 +95,22 @@ func (d *SrdDownloader) Download(ctx context.Context, force bool) error {
 	}
 
 	log.Debug().Msgf("Downloaded SRD file to %v", tempFile.Name())
-	// Now we'll write the downloaded file to the latest download file
-	_, err = tempFile.Seek(0, 0)
+	// Flush the temporary file to ensure all data is written
+	err = tempFile.Sync()
+	if err != nil {
+		log.Error().Err(err).Msg("failed to sync temporary file")
+		return err
+	}
+
+	// Close the temp file before unzipping
+	err = tempFile.Close()
 	if err != nil {
 		return err
 	}
 
-	err = d.latestDownloadFile.Truncate(0)
+	// Unzip and extract the Excel file from the temp file
+	err = d.unzipAndExtractExcel(tempFile.Name())
 	if err != nil {
-		return err
-	}
-
-	_, err = d.latestDownloadFile.Seek(0, 0)
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(d.latestDownloadFile, tempFile)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to copy downloaded SRD file to latest download file")
 		return err
 	}
 
@@ -123,6 +122,60 @@ func (d *SrdDownloader) Download(ctx context.Context, force bool) error {
 
 	log.Info().Msg("finished SRD download")
 	return d.completeDownload()
+}
+
+func (d *SrdDownloader) unzipAndExtractExcel(zipFilePath string) error {
+	log.Debug().Msgf("Unzipping SRD file from %v", zipFilePath)
+
+	// Open the zip file
+	reader, err := zip.OpenReader(zipFilePath)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to open zip file")
+		return err
+	}
+	defer reader.Close()
+
+	// Look for .xlsx file in the zip
+	var excelFile *zip.File
+	for _, f := range reader.File {
+		if filepath.Ext(f.Name) == ".xlsx" {
+			excelFile = f
+			break
+		}
+	}
+
+	if excelFile == nil {
+		return errors.New("no .xlsx file found in downloaded zip")
+	}
+
+	// Open the Excel file from the zip
+	rc, err := excelFile.Open()
+	if err != nil {
+		log.Error().Err(err).Msg("failed to open excel file from zip")
+		return err
+	}
+	defer rc.Close()
+
+	// Truncate the download file and seek to start
+	err = d.latestDownloadFile.Truncate(0)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.latestDownloadFile.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+
+	// Write the Excel file content to the download file
+	_, err = io.Copy(d.latestDownloadFile, rc)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to extract excel file from zip")
+		return err
+	}
+
+	log.Debug().Msg("Successfully unzipped and extracted Excel file")
+	return nil
 }
 
 func (d *SrdDownloader) LatestFileLocation() string {

@@ -1,6 +1,8 @@
 package download
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -14,7 +16,7 @@ import (
 
 type testServer struct {
 	statusCode int
-	body       string
+	body       []byte
 	callCount  int
 	server     *httptest.Server
 }
@@ -22,7 +24,7 @@ type testServer struct {
 func (t *testServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.callCount++
 	w.WriteHeader(t.statusCode)
-	_, err := w.Write([]byte(t.body))
+	_, err := w.Write(t.body)
 
 	if err != nil {
 		panic(err)
@@ -30,17 +32,38 @@ func (t *testServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTestServer(statusCode int, body string) *testServer {
-	testServer := &testServer{statusCode: statusCode, body: body}
+	testServer := &testServer{statusCode: statusCode, body: []byte(body)}
 	testServer.server = httptest.NewServer(testServer)
 
 	return testServer
+}
+
+func createZipWithExcel(excelContent string) []byte {
+	buf := new(bytes.Buffer)
+	writer := zip.NewWriter(buf)
+	defer writer.Close()
+
+	// Create an entry for an Excel file in the zip
+	excelFile, err := writer.Create("SRD.xlsx")
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = excelFile.Write([]byte(excelContent))
+	if err != nil {
+		panic(err)
+	}
+
+	return buf.Bytes()
 }
 
 func TestDownloader_FirstTimeDownload(t *testing.T) {
 	require := require.New(t)
 	tempDir := t.TempDir()
 
-	ts := getTestServer(http.StatusOK, "test body")
+	zipBody := createZipWithExcel("test excel content")
+	ts := &testServer{statusCode: http.StatusOK, body: zipBody}
+	ts.server = httptest.NewServer(ts)
 	defer ts.server.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -58,19 +81,22 @@ func TestDownloader_FirstTimeDownload(t *testing.T) {
 	// Check the downloaded file
 	downloadedFile, err := os.Open(tempDir + "/ukcp-srd-import-loaded-download.xlsx")
 	require.NoError(err)
+	defer downloadedFile.Close()
 
 	// Check the file content
 	buf := make([]byte, 1024)
 	n, err := downloadedFile.Read(buf)
 	require.NoError(err)
-	require.Equal("test body", string(buf[:n]))
+	require.Equal("test excel content", string(buf[:n]))
 }
 
 func TestDownloader_SubsequentDownloads(t *testing.T) {
 	require := require.New(t)
 	tempDir := t.TempDir()
 
-	ts := getTestServer(http.StatusOK, "test body")
+	zipBody := createZipWithExcel("test excel content")
+	ts := &testServer{statusCode: http.StatusOK, body: zipBody}
+	ts.server = httptest.NewServer(ts)
 	defer ts.server.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -96,12 +122,13 @@ func TestDownloader_SubsequentDownloads(t *testing.T) {
 	// Check the downloaded file
 	downloadedFile, err := os.Open(tempDir + "/ukcp-srd-import-loaded-download.xlsx")
 	require.NoError(err)
+	defer downloadedFile.Close()
 
 	// Check the file content
 	buf := make([]byte, 1024)
 	n, err := downloadedFile.Read(buf)
 	require.NoError(err)
-	require.Equal("test body", string(buf[:n]))
+	require.Equal("test excel content", string(buf[:n]))
 }
 
 func TestDownloader_AlreadyUpToDate(t *testing.T) {
