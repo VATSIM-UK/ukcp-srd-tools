@@ -551,7 +551,7 @@ func TestDownload_Errors(t *testing.T) {
 				"DB_DATABASE": "name",
 				"DB_PASSWORD": "passwd",
 			},
-			errors.New("failed to open excel extended file: zip: not a valid zip file"),
+			errors.New("failed to open zip file: zip: not a valid zip file"),
 			[]string{
 				"failed to open zip file",
 			},
