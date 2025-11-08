@@ -131,7 +131,7 @@ func (d *SrdDownloader) unzipAndExtractExcel(zipFilePath string) error {
 	reader, err := zip.OpenReader(zipFilePath)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to open zip file")
-		return err
+		return fmt.Errorf("failed to open excel extended file: %v", err)
 	}
 	defer reader.Close()
 
