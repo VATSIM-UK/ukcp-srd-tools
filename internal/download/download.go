@@ -86,7 +86,6 @@ func (d *SrdDownloader) Download(ctx context.Context, force bool) error {
 	if err != nil {
 		return err
 	}
-	defer tempFile.Close()
 
 	_, err = io.Copy(tempFile, resp.Body)
 	if err != nil {
