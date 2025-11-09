@@ -13,18 +13,18 @@ func TestDownloadUrl(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "Valid AiracCycle",
+			name: "Valid AiracCycle 2101",
 			airac: &airac.AiracCycle{
 				Ident: "2101",
 			},
-			expected: "https://www.nm.eurocontrol.int/RAD/additional doc/external_links/uk_srd/UK_Ireland_SRD_2101_notes.xlsx",
+			expected: "https://nats-uk.ead-it.com/cms-nats/export/sites/default/en/Publications/digital-datasets/SRD/AIRAC-21-01.zip",
 		},
 		{
-			name: "Empty AiracCycle Ident",
+			name: "Valid AiracCycle 2512",
 			airac: &airac.AiracCycle{
-				Ident: "",
+				Ident: "2512",
 			},
-			expected: "https://www.nm.eurocontrol.int/RAD/additional doc/external_links/uk_srd/UK_Ireland_SRD__notes.xlsx",
+			expected: "https://nats-uk.ead-it.com/cms-nats/export/sites/default/en/Publications/digital-datasets/SRD/AIRAC-25-12.zip",
 		},
 	}
 

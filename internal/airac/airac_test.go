@@ -405,6 +405,94 @@ func TestCycleFromIdent(t *testing.T) {
 	}
 }
 
+// Test the YearString method
+func TestAiracCycleYearString(t *testing.T) {
+	tests := []struct {
+		name     string
+		cycle    *AiracCycle
+		expected string
+	}{
+		{
+			name: "2401",
+			cycle: &AiracCycle{
+				Ident: "2401",
+				Start: time.Date(2024, time.January, 25, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2024, time.February, 22, 0, 0, 0, 0, time.UTC),
+			},
+			expected: "24",
+		},
+		{
+			name: "2413",
+			cycle: &AiracCycle{
+				Ident: "2413",
+				Start: time.Date(2024, time.December, 26, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2025, time.January, 23, 0, 0, 0, 0, time.UTC),
+			},
+			expected: "24",
+		},
+		{
+			name: "2304",
+			cycle: &AiracCycle{
+				Ident: "2304",
+				Start: time.Date(2023, time.April, 20, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2023, time.May, 18, 0, 0, 0, 0, time.UTC),
+			},
+			expected: "23",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.cycle.YearString()
+			require.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+// Test the MonthString method
+func TestAiracCycleMonthString(t *testing.T) {
+	tests := []struct {
+		name     string
+		cycle    *AiracCycle
+		expected string
+	}{
+		{
+			name: "2401",
+			cycle: &AiracCycle{
+				Ident: "2401",
+				Start: time.Date(2024, time.January, 25, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2024, time.February, 22, 0, 0, 0, 0, time.UTC),
+			},
+			expected: "01",
+		},
+		{
+			name: "2409",
+			cycle: &AiracCycle{
+				Ident: "2409",
+				Start: time.Date(2024, time.September, 5, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2024, time.October, 3, 0, 0, 0, 0, time.UTC),
+			},
+			expected: "09",
+		},
+		{
+			name: "2413",
+			cycle: &AiracCycle{
+				Ident: "2413",
+				Start: time.Date(2024, time.December, 26, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2025, time.January, 23, 0, 0, 0, 0, time.UTC),
+			},
+			expected: "13",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.cycle.MonthString()
+			require.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
 func BenchmarkCurrentAiracCycle(b *testing.B) {
 	clock := clockLib.NewMock()
 	airac := NewAirac(clock)

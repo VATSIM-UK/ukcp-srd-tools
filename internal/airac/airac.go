@@ -39,6 +39,14 @@ type AiracCycle struct {
 	End   time.Time
 }
 
+func (c *AiracCycle) YearString() string {
+	return c.Ident[:2]
+}
+
+func (c *AiracCycle) MonthString() string {
+	return c.Ident[2:]
+}
+
 // GetCurrentAirac returns the current AIRAC cycle
 func (a *Airac) CurrentCycle() *AiracCycle {
 	return a.nextAiracFromDate(a.previousAiracDayFromDate(a.currentDay()).Add(-time.Hour * 24))

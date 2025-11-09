@@ -7,5 +7,5 @@ import (
 )
 
 func DownloadUrl(airac *airac.AiracCycle) string {
-	return fmt.Sprintf("https://www.nm.eurocontrol.int/RAD/additional doc/external_links/uk_srd/UK_Ireland_SRD_%s_notes.xlsx", airac.Ident)
+	return fmt.Sprintf("https://nats-uk.ead-it.com/cms-nats/export/sites/default/en/Publications/digital-datasets/SRD/AIRAC-%s-%s.zip", airac.YearString(), airac.MonthString())
 }

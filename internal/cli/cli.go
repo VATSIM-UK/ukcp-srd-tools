@@ -303,6 +303,20 @@ func doDownload(ctx context.Context, force bool, forceCycle string, envPath stri
 	}
 	defer unlock()
 
+	// Validate the environment before downloading
+	err = godotenv.Overload(envPath)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to load environment file")
+		return ErrCannotLoadDotenv
+	}
+
+	// Get and validate database connection parameters early
+	_, err = getDatabaseConnectionParams()
+	if err != nil {
+		log.Error().Err(err).Msgf("failed to get database connection parameters: %v", err)
+		return err
+	}
+
 	// Get the current AIRAC cycle
 	airacManager := airac.NewAirac(nil)
 	cycleToDownload := airacManager.CurrentCycle()

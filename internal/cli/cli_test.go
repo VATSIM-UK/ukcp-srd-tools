@@ -1,6 +1,8 @@
 package cli_test
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -541,11 +543,17 @@ func TestDownload_Errors(t *testing.T) {
 		{
 			"invalid file",
 			"invalid.txt",
-			"",
-			nil,
-			errors.New("failed to open excel extended file: zip: not a valid zip file"),
+			"test.env",
+			map[string]string{
+				"DB_HOST":     "localhost",
+				"DB_PORT":     "5432",
+				"DB_USERNAME": "user",
+				"DB_DATABASE": "name",
+				"DB_PASSWORD": "passwd",
+			},
+			errors.New("failed to open zip file: zip: not a valid zip file"),
 			[]string{
-				"failed to load excel file",
+				"failed to open zip file",
 			},
 			200,
 		},
@@ -561,6 +569,12 @@ func TestDownload_Errors(t *testing.T) {
 
 			// Start up a test server
 			ts := getTestServer(tt.responseCode, fileName)
+
+			// For invalid file test, don't wrap in zip
+			if tt.name == "invalid file" {
+				ts.wrapInZip = false
+			}
+
 			defer ts.server.Close()
 
 			// Get the cliTest struct
@@ -580,7 +594,7 @@ func TestDownload_Errors(t *testing.T) {
 
 			if tt.expectedErr != nil {
 				require.Error(test.testError)
-				require.Equal(tt.expectedErr, test.testError)
+				require.Equal(tt.expectedErr.Error(), test.testError.Error())
 			} else {
 				require.NoError(test.testError)
 			}
@@ -872,6 +886,7 @@ type testServer struct {
 	filePathToServe string
 	callCount       int
 	server          *httptest.Server
+	wrapInZip       bool
 }
 
 func (t *testServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -891,7 +906,6 @@ func (t *testServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(t.statusCode)
 	defer file.Close()
 
 	_, err = file.Stat()
@@ -901,17 +915,58 @@ func (t *testServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Copy the file to the response
-	_, err = io.Copy(w, file)
+	// Read the file content
+	fileContent, err := io.ReadAll(file)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
+
+	w.WriteHeader(t.statusCode)
+
+	// If wrapInZip is false, serve the file directly
+	if !t.wrapInZip {
+		_, err = w.Write(fileContent)
+		if err != nil {
+			return
+		}
+		return
+	}
+
+	// Create a zip buffer with the file content
+	buf := new(bytes.Buffer)
+	writer := zip.NewWriter(buf)
+
+	// Add the file to the zip with the name "SRD.xlsx"
+	zipFile, err := writer.Create("SRD.xlsx")
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	_, err = zipFile.Write(fileContent)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	// Close the writer to flush the zip
+	err = writer.Close()
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	// Write the zip buffer to the response
+	_, err = io.Copy(w, buf)
+	if err != nil {
+		return
+	}
 }
 
 func getTestServer(statusCode int, pathToServe string) *testServer {
-	testServer := &testServer{statusCode: statusCode, filePathToServe: pathToServe}
+	testServer := &testServer{statusCode: statusCode, filePathToServe: pathToServe, wrapInZip: true}
 	testServer.server = httptest.NewServer(testServer)
 
 	return testServer
