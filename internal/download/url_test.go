@@ -17,14 +17,14 @@ func TestDownloadUrl(t *testing.T) {
 			airac: &airac.AiracCycle{
 				Ident: "2101",
 			},
-			expected: "https://nats-uk.ead-it.com/cms-nats/export/sites/default/en/Publications/digital-datasets/SRD/AIRAC-21-01.zip",
+			expected: "https://nats-uk.ead-it.com/cms-nats/export/sites/default/en/Publications/digital-datasets/SRD/AIRAC-01-2021.zip",
 		},
 		{
 			name: "Valid AiracCycle 2512",
 			airac: &airac.AiracCycle{
 				Ident: "2512",
 			},
-			expected: "https://nats-uk.ead-it.com/cms-nats/export/sites/default/en/Publications/digital-datasets/SRD/AIRAC-25-12.zip",
+			expected: "https://nats-uk.ead-it.com/cms-nats/export/sites/default/en/Publications/digital-datasets/SRD/AIRAC-12-2025.zip",
 		},
 	}
 
