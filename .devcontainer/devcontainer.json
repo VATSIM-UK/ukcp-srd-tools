@@ -1,0 +1,19 @@
+{
+	"name": "Go",
+	"image": "mcr.microsoft.com/devcontainers/go:latest",
+	"features": {
+		"ghcr.io/devcontainers/features/git:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": ["golang.Go"],
+			"settings": {
+				"go.lintOnSave": "package",
+				"go.lintTool": "golangci-lint"
+			}
+		}
+	},
+	"postCreateCommand": "go mod download",
+	// For comms to the UKCP-API devcontainer
+	"runArgs": ["--add-host=host.docker.internal:host-gateway"]
+}
