@@ -223,10 +223,13 @@ func importProcess(ctx context.Context, filePath string, cycle string, envPath s
 	// Get the filename from the command line
 	path, _ := filepath.Abs(filePath)
 
-	discord.SendDiscordNotification(discord.DiscordNotificationData{
+	err := discord.SendDiscordNotification(discord.DiscordNotificationData{
 		WebhookURL: discord.LoadWebhookURL(),
 		Content:    "Starting SRD import for AIRAC cycle " + cycle,
 	})
+	if err != nil {
+		log.Error().Err(err).Msg("failed to send Discord notification")
+	}
 
 	file, err := loadSrdFile(path)
 	if err != nil {
@@ -298,10 +301,13 @@ func importProcess(ctx context.Context, filePath string, cycle string, envPath s
 	// Print the stats
 	printStats(file.Stats())
 
-	discord.SendDiscordNotification(discord.DiscordNotificationData{
+	err = discord.SendDiscordNotification(discord.DiscordNotificationData{
 		WebhookURL: discord.LoadWebhookURL(),
 		Content:    "SRD import complete for AIRAC cycle " + cycle,
 	})
+	if err != nil {
+		log.Error().Err(err).Msg("failed to send Discord notification")
+	}
 
 	return nil
 }
@@ -346,10 +352,13 @@ func doDownload(ctx context.Context, force bool, forceCycle string, envPath stri
 		return err
 	}
 
-	discord.SendDiscordNotification(discord.DiscordNotificationData{
+	err = discord.SendDiscordNotification(discord.DiscordNotificationData{
 		WebhookURL: discord.LoadWebhookURL(),
 		Content:    "Starting SRD download for AIRAC cycle " + cycleToDownload.Ident,
 	})
+	if err != nil {
+		log.Error().Err(err).Msg("failed to send Discord notification")
+	}
 
 	// Download the SRD file
 	downloadUrl := download.DownloadUrl(cycleToDownload)
