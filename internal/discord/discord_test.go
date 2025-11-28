@@ -81,3 +81,22 @@ func TestSendDiscordNotification_NetworkError(t *testing.T) {
 	})
 	require.Error(err)
 }
+
+func TestLoadWebhookURL_Success(t *testing.T) {
+	require := require.New(t)
+
+	webhookURL := "https://discord.com/api/webhooks/123/abc"
+	t.Setenv("DISCORD_WEBHOOK_URL", webhookURL)
+
+	result := LoadWebhookURL()
+	require.Equal(webhookURL, result)
+}
+
+func TestLoadWebhookURL_Missing(t *testing.T) {
+	require := require.New(t)
+
+	t.Setenv("DISCORD_WEBHOOK_URL", "")
+
+	result := LoadWebhookURL()
+	require.Equal("", result)
+}

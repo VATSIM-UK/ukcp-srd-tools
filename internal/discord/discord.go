@@ -3,6 +3,7 @@ package discord
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -10,12 +11,12 @@ import (
 
 type DiscordNotificationData struct {
 	WebhookURL string
-	Content string
+	Content    string
 }
 
 func SendDiscordNotification(data DiscordNotificationData) error {
 	payload := fmt.Sprintf(`{"content": "%s"}`, data.Content)
-	
+
 	req, err := http.NewRequest("POST", data.WebhookURL, strings.NewReader(payload))
 	if err != nil {
 		return err
@@ -35,4 +36,13 @@ func SendDiscordNotification(data DiscordNotificationData) error {
 
 	log.Info().Msg("Discord notification sent successfully")
 	return nil
+}
+
+func LoadWebhookURL() string {
+	webhookUrl := os.Getenv("DISCORD_WEBHOOK_URL")
+
+	if webhookUrl == "" {
+		log.Error().Msg("DISCORD_WEBHOOK_URL environment variable is not set")
+	}
+	return webhookUrl
 }
