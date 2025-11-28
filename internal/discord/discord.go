@@ -15,7 +15,7 @@ type DiscordNotificationData struct {
 }
 
 func SendDiscordNotification(data DiscordNotificationData) error {
-	payload := fmt.Sprintf(`{"content": "%s"}`, data.Content)
+	payload := fmt.Sprintf(`{"content": "%s", "username": "UKCP SRD Tools"}`, data.Content)
 
 	req, err := http.NewRequest("POST", data.WebhookURL, strings.NewReader(payload))
 	if err != nil {

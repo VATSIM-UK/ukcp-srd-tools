@@ -1,6 +1,8 @@
 package discord
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -99,4 +101,29 @@ func TestLoadWebhookURL_Missing(t *testing.T) {
 
 	result := LoadWebhookURL()
 	require.Equal("", result)
+}
+
+func TestSendDiscordNotification_PayloadContent(t *testing.T) {
+	require := require.New(t)
+
+	var receivedPayload map[string]string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		require.NoError(err)
+
+		err = json.Unmarshal(body, &receivedPayload)
+		require.NoError(err)
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	testContent := "Test import for cycle 2404"
+	err := SendDiscordNotification(DiscordNotificationData{
+		WebhookURL: server.URL,
+		Content:    testContent,
+	})
+	require.NoError(err)
+
+	require.Equal(testContent, receivedPayload["content"])
 }
