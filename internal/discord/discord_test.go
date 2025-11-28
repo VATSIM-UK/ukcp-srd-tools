@@ -1,0 +1,83 @@
+package discord
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestSendDiscordNotification_Success(t *testing.T) {
+	require := require.New(t)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal("POST", r.Method)
+		require.Equal("application/json", r.Header.Get("Content-Type"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	err := SendDiscordNotification(DiscordNotificationData{
+		WebhookURL: server.URL,
+		Content:    "Test notification",
+	})
+	require.NoError(err)
+}
+
+func TestSendDiscordNotification_StatusCodes(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		wantError  bool
+	}{
+		{"200 OK", 200, false},
+		{"204 No Content", 204, false},
+		{"299 Max Success", 299, false},
+		{"300 Redirect", 300, true},
+		{"400 Bad Request", 400, true},
+		{"500 Server Error", 500, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require := require.New(t)
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+			}))
+			defer server.Close()
+
+			err := SendDiscordNotification(DiscordNotificationData{
+				WebhookURL: server.URL,
+				Content:    "Test",
+			})
+
+			if tt.wantError {
+				require.Error(err)
+			} else {
+				require.NoError(err)
+			}
+		})
+	}
+}
+
+func TestSendDiscordNotification_InvalidURL(t *testing.T) {
+	require := require.New(t)
+
+	err := SendDiscordNotification(DiscordNotificationData{
+		WebhookURL: "invalid url",
+		Content:    "Test",
+	})
+	require.Error(err)
+}
+
+func TestSendDiscordNotification_NetworkError(t *testing.T) {
+	require := require.New(t)
+
+	err := SendDiscordNotification(DiscordNotificationData{
+		WebhookURL: "http://nonexistent.invalid",
+		Content:    "Test",
+	})
+	require.Error(err)
+}
