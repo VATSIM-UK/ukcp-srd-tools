@@ -378,10 +378,13 @@ func doDownload(ctx context.Context, force bool, forceCycle string, envPath stri
 		return err
 	}
 
-	discord.SendDiscordNotification(discord.DiscordNotificationData{
+	err = discord.SendDiscordNotification(discord.DiscordNotificationData{
 		WebhookURL: discord.LoadWebhookURL(),
 		Content:    "SRD download complete for AIRAC cycle " + cycleToDownload.Ident,
 	})
+	if err != nil {
+		log.Error().Err(err).Msg("failed to send Discord notification")
+	}
 
 	// Download happened, so now we do the import
 	return importProcess(ctx, downloader.LatestFileLocation(), cycleToDownload.Ident, envPath, fileDir)
