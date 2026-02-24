@@ -223,7 +223,14 @@ func importProcess(ctx context.Context, filePath string, cycle string, envPath s
 	// Get the filename from the command line
 	path, _ := filepath.Abs(filePath)
 
-	err := discord.SendDiscordNotification(discord.DiscordNotificationData{
+	// Load the .env file before sending Discord notifications so the webhook URL is available
+	err := godotenv.Overload(envPath)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to load environment file")
+		return ErrCannotLoadDotenv
+	}
+
+	err = discord.SendDiscordNotification(discord.DiscordNotificationData{
 		WebhookURL: discord.LoadWebhookURL(),
 		Content:    "Starting SRD import for AIRAC cycle " + cycle,
 	})
@@ -250,13 +257,6 @@ func importProcess(ctx context.Context, filePath string, cycle string, envPath s
 	}
 
 	log.Info().Msgf("importing SRD file %v for cycle %v", path, airacCycle.Ident)
-
-	// Load the .env file
-	err = godotenv.Overload(envPath)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to load environment file")
-		return ErrCannotLoadDotenv
-	}
 
 	// Get the database connection parameters
 	dbParams, err := getDatabaseConnectionParams()
