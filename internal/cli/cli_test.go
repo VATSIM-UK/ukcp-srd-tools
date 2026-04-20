@@ -338,6 +338,10 @@ func TestRun_ImportSuccess(t *testing.T) {
 			testDir := t.TempDir()
 			envFilePath := fmt.Sprintf("%s/%s", testDir, "test.env")
 
+			// Setup Discord webhook mock
+			discordMock := getDiscordWebhookMock()
+			defer discordMock.server.Close()
+
 			// If there's a setup function, run it
 			if tt.setupFunc != nil {
 				test := getCliTestWithTempDir(tt.extraArgs, testDir)
@@ -358,20 +362,26 @@ func TestRun_ImportSuccess(t *testing.T) {
 			containerPort, err := mysqlContainer.container.MappedPort(ctx, "3306")
 			require.NoError(err)
 
-			// Now write the env file with our database credentaisl
-			err = godotenv.Write(
+			// Now write the env file with our database credentials and Discord webhook
+			require.NoError(godotenv.Write(
 				map[string]string{
-					"DB_HOST":     containerHost,
-					"DB_PORT":     containerPort.Port(),
-					"DB_USERNAME": TestUsername,
-					"DB_DATABASE": TestDatabase,
-					"DB_PASSWORD": TestPassword,
+					"DB_HOST":             containerHost,
+					"DB_PORT":             containerPort.Port(),
+					"DB_USERNAME":         TestUsername,
+					"DB_DATABASE":         TestDatabase,
+					"DB_PASSWORD":         TestPassword,
+					"DISCORD_WEBHOOK_URL": discordMock.server.URL,
 				},
 				envFilePath,
-			)
+			))
 
 			// Run the CLI test
 			require.NoError(cli.Run(testDir))
+
+			// Check Discord webhook was called (start and complete notifications)
+			require.Equal(2, discordMock.callCount, "expected Discord webhook to be called twice (start and complete)")
+			require.Contains(discordMock.messages[0], "Starting SRD import for AIRAC cycle 2404")
+			require.Contains(discordMock.messages[1], "SRD import complete for AIRAC cycle 2404")
 
 			// Check the logs
 			for _, msg := range tt.expectedLogMessages {
@@ -673,6 +683,10 @@ func TestDownloadSuccess(t *testing.T) {
 			testDir := t.TempDir()
 			envFilePath := fmt.Sprintf("%s/%s", testDir, "test.env")
 
+			// Setup Discord webhook mock
+			discordMock := getDiscordWebhookMock()
+			defer discordMock.server.Close()
+
 			// Download file path
 			fileName := testDataFile(tt.fileName)
 
@@ -718,20 +732,28 @@ func TestDownloadSuccess(t *testing.T) {
 			containerPort, err := mysqlContainer.container.MappedPort(ctx, "3306")
 			require.NoError(err)
 
-			// Now write the env file with our database credentaisl
-			err = godotenv.Write(
+			// Now write the env file with our database credentials and Discord webhook
+			require.NoError(godotenv.Write(
 				map[string]string{
-					"DB_HOST":     containerHost,
-					"DB_PORT":     containerPort.Port(),
-					"DB_USERNAME": TestUsername,
-					"DB_DATABASE": TestDatabase,
-					"DB_PASSWORD": TestPassword,
+					"DB_HOST":             containerHost,
+					"DB_PORT":             containerPort.Port(),
+					"DB_USERNAME":         TestUsername,
+					"DB_DATABASE":         TestDatabase,
+					"DB_PASSWORD":         TestPassword,
+					"DISCORD_WEBHOOK_URL": discordMock.server.URL,
 				},
 				envFilePath,
-			)
+			))
 
 			// Run the CLI test
 			require.NoError(cli.Run(testDir))
+
+			// Check Discord webhook was called (download start, download complete, import start, import complete)
+			require.Equal(4, discordMock.callCount, "expected Discord webhook to be called four times (download start/complete and import start/complete)")
+			require.Contains(discordMock.messages[0], "Starting SRD download for AIRAC cycle")
+			require.Contains(discordMock.messages[1], "SRD download complete for AIRAC cycle")
+			require.Contains(discordMock.messages[2], "Starting SRD import for AIRAC cycle")
+			require.Contains(discordMock.messages[3], "SRD import complete for AIRAC cycle")
 
 			// Check the logs
 			for _, msg := range tt.expectedLogMessages {
@@ -889,6 +911,12 @@ type testServer struct {
 	wrapInZip       bool
 }
 
+type discordWebhookMock struct {
+	callCount int
+	messages  []string
+	server    *httptest.Server
+}
+
 func (t *testServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.callCount++
 
@@ -970,4 +998,19 @@ func getTestServer(statusCode int, pathToServe string) *testServer {
 	testServer.server = httptest.NewServer(testServer)
 
 	return testServer
+}
+
+func getDiscordWebhookMock() *discordWebhookMock {
+	mock := &discordWebhookMock{
+		messages: []string{},
+	}
+	mock.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mock.callCount++
+		body, err := io.ReadAll(r.Body)
+		if err == nil {
+			mock.messages = append(mock.messages, string(body))
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	return mock
 }

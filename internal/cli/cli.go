@@ -14,6 +14,7 @@ import (
 
 	"github.com/VATSIM-UK/ukcp-srd-tools/internal/airac"
 	"github.com/VATSIM-UK/ukcp-srd-tools/internal/db"
+	"github.com/VATSIM-UK/ukcp-srd-tools/internal/discord"
 	"github.com/VATSIM-UK/ukcp-srd-tools/internal/download"
 	"github.com/VATSIM-UK/ukcp-srd-tools/internal/excel"
 	"github.com/VATSIM-UK/ukcp-srd-tools/internal/file"
@@ -222,6 +223,21 @@ func importProcess(ctx context.Context, filePath string, cycle string, envPath s
 	// Get the filename from the command line
 	path, _ := filepath.Abs(filePath)
 
+	// Load the .env file before sending Discord notifications so the webhook URL is available
+	err := godotenv.Overload(envPath)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to load environment file")
+		return ErrCannotLoadDotenv
+	}
+
+	err = discord.SendDiscordNotification(discord.DiscordNotificationData{
+		WebhookURL: discord.LoadWebhookURL(),
+		Content:    "Starting SRD import for AIRAC cycle " + cycle,
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("failed to send Discord notification")
+	}
+
 	file, err := loadSrdFile(path)
 	if err != nil {
 		return err
@@ -241,13 +257,6 @@ func importProcess(ctx context.Context, filePath string, cycle string, envPath s
 	}
 
 	log.Info().Msgf("importing SRD file %v for cycle %v", path, airacCycle.Ident)
-
-	// Load the .env file
-	err = godotenv.Overload(envPath)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to load environment file")
-		return ErrCannotLoadDotenv
-	}
 
 	// Get the database connection parameters
 	dbParams, err := getDatabaseConnectionParams()
@@ -292,6 +301,14 @@ func importProcess(ctx context.Context, filePath string, cycle string, envPath s
 	// Print the stats
 	printStats(file.Stats())
 
+	err = discord.SendDiscordNotification(discord.DiscordNotificationData{
+		WebhookURL: discord.LoadWebhookURL(),
+		Content:    "SRD import complete for AIRAC cycle " + cycle,
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("failed to send Discord notification")
+	}
+
 	return nil
 }
 
@@ -335,6 +352,14 @@ func doDownload(ctx context.Context, force bool, forceCycle string, envPath stri
 		return err
 	}
 
+	err = discord.SendDiscordNotification(discord.DiscordNotificationData{
+		WebhookURL: discord.LoadWebhookURL(),
+		Content:    "Starting SRD download for AIRAC cycle " + cycleToDownload.Ident,
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("failed to send Discord notification")
+	}
+
 	// Download the SRD file
 	downloadUrl := download.DownloadUrl(cycleToDownload)
 	if CLI.Download.Url != "" {
@@ -351,6 +376,14 @@ func doDownload(ctx context.Context, force bool, forceCycle string, envPath stri
 		return ErrUpToDate
 	} else if err != nil {
 		return err
+	}
+
+	err = discord.SendDiscordNotification(discord.DiscordNotificationData{
+		WebhookURL: discord.LoadWebhookURL(),
+		Content:    "SRD download complete for AIRAC cycle " + cycleToDownload.Ident,
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("failed to send Discord notification")
 	}
 
 	// Download happened, so now we do the import
