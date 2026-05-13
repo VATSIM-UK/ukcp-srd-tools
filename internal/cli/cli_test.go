@@ -378,10 +378,9 @@ func TestRun_ImportSuccess(t *testing.T) {
 			// Run the CLI test
 			require.NoError(cli.Run(testDir))
 
-			// Check Discord webhook was called (start and complete notifications)
-			require.Equal(2, discordMock.callCount, "expected Discord webhook to be called twice (start and complete)")
-			require.Contains(discordMock.messages[0], "Starting SRD import for AIRAC cycle 2404")
-			require.Contains(discordMock.messages[1], "SRD import complete for AIRAC cycle 2404")
+			// Check Discord webhook was called (complete notification only)
+			require.Equal(1, discordMock.callCount, "expected Discord webhook to be called once (complete only)")
+			require.Contains(discordMock.messages[0], "SRD import complete for AIRAC cycle 2404")
 
 			// Check the logs
 			for _, msg := range tt.expectedLogMessages {
@@ -748,12 +747,10 @@ func TestDownloadSuccess(t *testing.T) {
 			// Run the CLI test
 			require.NoError(cli.Run(testDir))
 
-			// Check Discord webhook was called (download start, download complete, import start, import complete)
-			require.Equal(4, discordMock.callCount, "expected Discord webhook to be called four times (download start/complete and import start/complete)")
+			// Check Discord webhook was called (download start and import complete)
+			require.Equal(2, discordMock.callCount, "expected Discord webhook to be called twice (download start and import complete)")
 			require.Contains(discordMock.messages[0], "Starting SRD download for AIRAC cycle")
-			require.Contains(discordMock.messages[1], "SRD download complete for AIRAC cycle")
-			require.Contains(discordMock.messages[2], "Starting SRD import for AIRAC cycle")
-			require.Contains(discordMock.messages[3], "SRD import complete for AIRAC cycle")
+			require.Contains(discordMock.messages[1], "SRD import complete for AIRAC cycle")
 
 			// Check the logs
 			for _, msg := range tt.expectedLogMessages {

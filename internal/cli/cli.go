@@ -230,14 +230,6 @@ func importProcess(ctx context.Context, filePath string, cycle string, envPath s
 		return ErrCannotLoadDotenv
 	}
 
-	err = discord.SendDiscordNotification(discord.DiscordNotificationData{
-		WebhookURL: discord.LoadWebhookURL(),
-		Content:    "Starting SRD import for AIRAC cycle " + cycle,
-	})
-	if err != nil {
-		log.Error().Err(err).Msg("failed to send Discord notification")
-	}
-
 	file, err := loadSrdFile(path)
 	if err != nil {
 		return err
@@ -376,14 +368,6 @@ func doDownload(ctx context.Context, force bool, forceCycle string, envPath stri
 		return ErrUpToDate
 	} else if err != nil {
 		return err
-	}
-
-	err = discord.SendDiscordNotification(discord.DiscordNotificationData{
-		WebhookURL: discord.LoadWebhookURL(),
-		Content:    "SRD download complete for AIRAC cycle " + cycleToDownload.Ident,
-	})
-	if err != nil {
-		log.Error().Err(err).Msg("failed to send Discord notification")
 	}
 
 	// Download happened, so now we do the import
