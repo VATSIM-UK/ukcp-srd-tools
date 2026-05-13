@@ -157,8 +157,8 @@ func TestRun_ImportErrors(t *testing.T) {
 		{
 			"missing file",
 			"missing.xlsx",
-			"",
-			nil,
+			"test.env",
+			map[string]string{},
 			fmt.Errorf("failed to open excel extended file: open %s: no such file or directory", testDataFile("missing.xlsx")),
 			[]string{
 				"failed to open excel extended file",
@@ -167,8 +167,8 @@ func TestRun_ImportErrors(t *testing.T) {
 		{
 			"non excel file",
 			"invalid.txt",
-			"",
-			nil,
+			"test.env",
+			map[string]string{},
 			cli.ErrUnknownFileExtension,
 			[]string{
 				"unknown file extension .txt",
