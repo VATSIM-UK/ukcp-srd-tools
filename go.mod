@@ -3,7 +3,7 @@ module github.com/VATSIM-UK/ukcp-srd-tools
 go 1.23.1
 
 require (
-	github.com/alecthomas/kong v1.16.0
+	github.com/alecthomas/kong v1.16.1
 	github.com/alexflint/go-filemutex v1.3.0
 	github.com/benbjohnson/clock v1.3.5
 	github.com/go-sql-driver/mysql v1.8.1
